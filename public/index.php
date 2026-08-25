@@ -122,12 +122,12 @@
 			} catch (error) { message.textContent = error.message; } finally { submit.disabled = false; submit.textContent = 'Crea versioni'; }
 		});
 
-		// Video Tab Logic
+		// Video tab
 		const tabFoto = document.getElementById('tabFoto'); const tabVideo = document.getElementById('tabVideo'); const videoForm = document.getElementById('videoForm');
 		tabFoto.addEventListener('click', () => { tabFoto.classList.add('active'); tabVideo.classList.remove('active'); form.style.display = 'grid'; videoForm.style.display = 'none'; });
 		tabVideo.addEventListener('click', () => { tabVideo.classList.add('active'); tabFoto.classList.remove('active'); form.style.display = 'none'; videoForm.style.display = 'grid'; });
 
-		// Video Upload Logic
+		// Upload video
 		const videoInput = document.getElementById('videoFileInput'); const videoZone = document.getElementById('videoDropZone'); const videoLabel = document.getElementById('videoFileLabel'); const videoSubmit = document.getElementById('videoSubmitButton'); const videoMessage = document.getElementById('videoMessage');
 		videoInput.addEventListener('change', () => { if (videoInput.files.length > 0) { videoLabel.textContent = videoInput.files.length === 1 ? videoInput.files[0].name : `${videoInput.files.length} video selezionati`; videoSubmit.disabled = false; videoSubmit.textContent = 'Carica video'; } else { videoLabel.textContent = "Trascina qui i video"; videoSubmit.disabled = true; } });
 		['dragenter','dragover'].forEach(event => videoZone.addEventListener(event, e => { e.preventDefault(); videoZone.classList.add('dragging'); }));

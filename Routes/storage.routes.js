@@ -7,7 +7,7 @@ const apiKey = require('../middlewares/apiKey');
 
 const upload = multer({
 	storage: multer.memoryStorage(),
-	limits: { fileSize: 100 * 1024 * 1024 }, // 100MB for videos
+	limits: { fileSize: 100 * 1024 * 1024 }, // Limite 100MB
 	fileFilter: (req, file, cb) => {
 		cb(null, /^(image|video)\/(jpeg|png|webp|gif|avif|tiff|mp4|webm|quicktime|x-msvideo)$/.test(file.mimetype));
 	}
