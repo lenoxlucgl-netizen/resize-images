@@ -347,20 +347,20 @@ Questa sequenza evita di conservare l'originale quando l'utente ha scelto esplic
 Il formato attuale è:
 
 ```text
-thumbs/NomeOriginale_Dimensione.estensione
+thumbs/NomeOriginale-Dimensione.estensione
 ```
 
-Esempio con `paesaggio.jpg`:
+Esempio con `paesaggio.jpg` (dimensione originale 2000x1500):
 
 ```text
-thumbs/paesaggio_200x200.jpg
-thumbs/paesaggio_800x600.jpg
+thumbs/paesaggio-200x200.jpg
+thumbs/paesaggio-800x600.jpg
 ```
 
 Se viene conservato anche l'originale:
 
 ```text
-paesaggio.jpg
+paesaggio-2000x1500.jpg
 ```
 
 La directory `thumbs` deriva dalla configurazione:
@@ -678,7 +678,7 @@ Questi sono i concetti ripresi nel progetto:
 | Verifica che il file sia immagine | filtro MIME della route e lettura Sharp |
 | Dimensioni multiple | checkbox preset e fino a due dimensioni custom |
 | Rapporto d'aspetto | Sharp con `fit: 'inside'` |
-| Nome con dimensioni | `NomeOriginale_Dimensione.ext` |
+| Nome con dimensioni | `NomeOriginale-Dimensione.ext` |
 | Storage nello stesso bucket | MinIO bucket `savedimages` |
 | Conservazione opzionale originale | campo multipart `keepOriginal` |
 | Percorso separato varianti | prefisso `thumbs/` |
@@ -770,7 +770,7 @@ Per usare il progetto:
 Il risultato principale è una serie di oggetti con questa convenzione:
 
 ```text
-thumbs/NomeOriginale_Dimensione.ext
+thumbs/NomeOriginale-Dimensione.ext
 ```
 
 L'originale viene salvato alla radice del bucket solo quando è stata selezionata la relativa opzione.

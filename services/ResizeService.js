@@ -7,13 +7,14 @@ class ResizeService {
     const image = sharp(originalBuffer);
     const metadata = await image.metadata();
     const results = [];
+    const originalDimension = `${metadata.width}x${metadata.height}`;
 
     for (const size of sizes) {
       const [width, height] = size.split('x').map(Number);
       const ext = originalKey.split('.').pop();
       const baseName = originalKey.substring(0, originalKey.lastIndexOf('.'));
       const resizedPath = resizeConfig.resizedPath.replace(/^[/\\]+|[/\\]+$/g, '');
-      const outputKey = `${resizedPath}/${baseName}_${size}.${ext}`;
+      const outputKey = `${resizedPath}/${baseName}-${size}.${ext}`;
 
       const resizedBuffer = await image
         .clone()
@@ -24,7 +25,7 @@ class ResizeService {
       results.push(outputKey);
     }
 
-    return results;
+    return { variants: results, originalDimension };
   }
 }
 

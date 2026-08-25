@@ -19,13 +19,18 @@ class StorageController {
       const cleanName = req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, '-');
       const key = cleanName;
 
-      const variants = await ResizeService.processImage(req.file.buffer, key, bucket, sizes);
+      const { variants, originalDimension } = await ResizeService.processImage(req.file.buffer, key, bucket, sizes);
+      
+      const ext = key.split('.').pop();
+      const baseName = key.substring(0, key.lastIndexOf('.'));
+      const originalFinalKey = `${baseName}-${originalDimension}.${ext}`;
+
       if (keepOriginal) {
-        await StorageService.uploadFile(bucket, key, req.file.buffer, req.file.mimetype);
+        await StorageService.uploadFile(bucket, originalFinalKey, req.file.buffer, req.file.mimetype);
       }
 
       res.status(201).json({ 
-        original: keepOriginal ? key : null,
+        original: keepOriginal ? originalFinalKey : null,
         keepOriginal,
         variants,
         message: keepOriginal ? 'Immagine salvata con originali' : 'Immagine salvata solo nelle versioni modificate'
