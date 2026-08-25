@@ -10,7 +10,7 @@ router.post('/login', (req, res) => {
   const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
   
   if (username === process.env.ADMIN_USERNAME && passwordHash === process.env.ADMIN_PASSWORD_HASH) {
-    const token = crypto.createHmac('sha256', process.env.JWT_SECRET || 'fallback_secret').update(username).digest('hex');
+    const token = crypto.createHmac('sha256', process.env.APP_SECRET || 'fallback_secret').update(username).digest('hex');
     return res.json({ token });
   }
   

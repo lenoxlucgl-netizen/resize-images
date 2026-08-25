@@ -29,7 +29,7 @@ L'idea funzionale prende spunto dall'estensione Firebase **Storage Resize Images
 - **Helmet**: intestazioni HTTP di sicurezza e Content Security Policy.
 - **CORS**: gestione delle richieste cross-origin.
 - **dotenv**: caricamento delle variabili dal file `.env`.
-- **PostgreSQL, Redis e JWT**: componenti predisposti per funzionalità aggiuntive, non necessari per il flusso web principale.
+- **PostgreSQL e Redis**: componenti predisposti per funzionalità aggiuntive, non necessari per il flusso web principale.
 
 Il file `public/index.php` è in realtà HTML con JavaScript e CSS incorporati. Non viene eseguito da PHP: Express lo invia come pagina HTML.
 

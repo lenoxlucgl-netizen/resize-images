@@ -7,7 +7,7 @@ module.exports = (req, res, next) => {
   }
 
   const token = authHeader.split(' ')[1];
-  const expectedToken = crypto.createHmac('sha256', process.env.JWT_SECRET || 'fallback_secret').update(process.env.ADMIN_USERNAME || 'admin').digest('hex');
+  const expectedToken = crypto.createHmac('sha256', process.env.APP_SECRET || 'fallback_secret').update(process.env.ADMIN_USERNAME || 'admin').digest('hex');
 
   if (token === expectedToken) {
     req.admin = { username: process.env.ADMIN_USERNAME };
