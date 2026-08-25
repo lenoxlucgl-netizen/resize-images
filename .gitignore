@@ -6,3 +6,4 @@ minio.windows-amd64.RELEASE.*.exe
 node_modules/
 data/
 saved-images/
+api-keys.json

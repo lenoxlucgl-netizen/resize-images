@@ -41,6 +41,10 @@
 		.add-size { margin-top:8px; padding:10px; border:1px dashed #68756a; background:transparent; color:#adb6aa; font:12px 'DM Mono',monospace; }
 		button { width:100%; margin-top:22px; padding:16px; border:0; background:var(--coral); color:var(--ink); font:600 15px 'Space Grotesk',sans-serif; cursor:pointer; } button:disabled { opacity:.45; cursor:not-allowed; }
 		#message { min-height:20px; margin-top:18px; color:var(--acid); font:12px 'DM Mono',monospace; }
+		.api-box { margin-top:18px; padding-top:18px; border-top:1px solid #48514a; }
+		.api-box button { margin-top:10px; background:var(--acid); }
+		#apiResult { display:none; margin-top:12px; color:#adb6aa; font:11px 'DM Mono',monospace; line-height:1.5; word-break:break-all; }
+		#apiResult.visible { display:block; }
 		#results { display:none; margin-top:60px; } #results.visible { display:block; }
 		.result-head { display:flex; justify-content:space-between; border-bottom:1px solid var(--line); padding-bottom:14px; } .result-head h2 { margin:0; font-size:27px; letter-spacing:-.04em; }
 		.result-head span { color:var(--muted); font:12px 'DM Mono',monospace; }
@@ -62,18 +66,20 @@
 				<div class="sizes"><label class="size"><input type="checkbox" name="sizes" value="200x200" checked>200 × 200</label><label class="size"><input type="checkbox" name="sizes" value="400x400" checked>400 × 400</label><label class="size"><input type="checkbox" name="sizes" value="680x680" checked>680 × 680</label></div>
 				<div id="customSizes" class="custom-sizes"></div><button id="addSize" class="add-size" type="button">+ Aggiungi dimensione personalizzata (max 2)</button>
 				<button id="submitButton" type="submit" disabled>Seleziona un'immagine</button><div id="message" role="status"></div>
+				<div class="api-box"><div class="eyebrow">03 / API integrabile</div><span style="display:block;margin-top:8px;color:#adb6aa;font-size:12px;line-height:1.4">Genera una chiave per usare il ridimensionamento da un'altra applicazione.</span><button id="generateApiKey" type="button">Genera API key</button><div id="apiResult" role="status"></div></div>
 			</section>
 		</form>
 			<section id="results"><div class="result-head"><h2>Versioni create</h2><span id="resultSizes"></span></div><div class="gallery" id="gallery"></div></section>
 	</main>
 	<script>
 		const form = document.getElementById('uploadForm'); const input = document.getElementById('fileInput'); const zone = document.getElementById('dropZone'); const label = document.getElementById('fileLabel'); const submit = document.getElementById('submitButton'); const message = document.getElementById('message'); const customSizes = document.getElementById('customSizes'); const addSize = document.getElementById('addSize');
+		document.getElementById('generateApiKey').addEventListener('click', async () => { const result = document.getElementById('apiResult'); result.textContent = 'Generazione...'; result.classList.add('visible'); try { const response = await fetch('/api/auth/api-key', { method:'POST' }); const data = await response.json(); if (!response.ok) throw new Error(data.error); result.textContent = `API key: ${data.apiKey} | Endpoint: ${data.uploadEndpoint}`; await navigator.clipboard?.writeText(data.apiKey); } catch (error) { result.textContent = error.message; } });
 		addSize.addEventListener('click', () => { if (customSizes.children.length >= 2) return; const wrapper = document.createElement('label'); wrapper.className = 'custom-size'; wrapper.innerHTML = '<input name="sizes" type="text" pattern="[0-9]{1,5}x[0-9]{1,5}" placeholder="es. 1024x768" aria-label="Dimensione personalizzata">'; customSizes.appendChild(wrapper); if (customSizes.children.length >= 2) addSize.disabled = true; });
 		input.addEventListener('change', () => { const file = input.files[0]; if (file) { label.textContent = file.name; submit.disabled = false; submit.textContent = 'Crea versioni'; } });
 		['dragenter','dragover'].forEach(event => zone.addEventListener(event, e => { e.preventDefault(); zone.classList.add('dragging'); }));
 		['dragleave','drop'].forEach(event => zone.addEventListener(event, e => { e.preventDefault(); zone.classList.remove('dragging'); }));
 		zone.addEventListener('drop', e => { if (e.dataTransfer.files[0]) { input.files = e.dataTransfer.files; input.dispatchEvent(new Event('change')); } });
-		form.addEventListener('submit', async e => { e.preventDefault(); const selectedSizes = [...form.querySelectorAll('input[name="sizes"]:checked')]; if (!selectedSizes.length) { message.textContent = 'Seleziona almeno una dimensione'; return; } submit.disabled = true; submit.textContent = 'Elaborazione...'; message.textContent = 'Invio a MinIO e creazione varianti'; document.getElementById('results').classList.remove('visible');
+		form.addEventListener('submit', async e => { e.preventDefault(); const selectedSizes = [...form.querySelectorAll('input[name="sizes"]')].filter(size => size.type === 'checkbox' ? size.checked : size.value.trim()); if (!selectedSizes.length) { message.textContent = 'Seleziona almeno una dimensione'; return; } submit.disabled = true; submit.textContent = 'Elaborazione...'; message.textContent = 'Invio a MinIO e creazione varianti'; document.getElementById('results').classList.remove('visible');
 			try { const response = await fetch('/api/files/upload', { method:'POST', body:new FormData(form) }); const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Upload non riuscito');
 				message.textContent = data.message; document.getElementById('resultSizes').textContent = selectedSizes.map(size => size.value.replace('x',' × ')).join(' · '); const gallery = document.getElementById('gallery'); gallery.innerHTML = ''; data.variants.forEach(key => { const tile = document.createElement('article'); tile.className = 'tile'; tile.innerHTML = `<img src="/api/files/object/${encodeURIComponent(key)}" alt="Versione ridimensionata"><p>${key.split('/').pop()}</p>`; gallery.appendChild(tile); }); document.getElementById('results').classList.add('visible');
 			} catch (error) { message.textContent = error.message; } finally { submit.disabled = false; submit.textContent = 'Crea versioni'; }

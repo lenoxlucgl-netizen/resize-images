@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const StorageController = require('../Controllers/StorageController');
 const StorageService = require('../services/StorageService');
+const apiKey = require('../middlewares/apiKey');
 
 const upload = multer({
 	storage: multer.memoryStorage(),
@@ -13,6 +14,7 @@ const upload = multer({
 });
 
 router.post('/upload', upload.single('file'), StorageController.upload);
+router.post('/upload-api', apiKey, upload.single('file'), StorageController.upload);
 
 router.get('/object/*', async (req, res) => {
 	try {

@@ -774,3 +774,76 @@ thumbs/NomeOriginale_Dimensione.ext
 ```
 
 L'originale viene salvato alla radice del bucket solo quando è stata selezionata la relativa opzione.
+
+---
+
+## 17. API integrabile con API key
+
+Il progetto espone un secondo endpoint di upload pensato per essere utilizzato
+da applicazioni esterne:
+
+```text
+POST /api/files/upload-api
+```
+
+Prima bisogna generare una chiave:
+
+```text
+POST /api/auth/api-key
+```
+
+La risposta contiene la chiave in chiaro una sola volta:
+
+```json
+{
+  "apiKey": "imgf_<valore casuale>",
+  "uploadEndpoint": "/api/files/upload-api"
+}
+```
+
+Il server non salva la chiave in chiaro. Calcola un hash SHA-256 e salva
+soltanto hash e data di creazione nel file locale `api-keys.json`, escluso dal
+repository tramite `.gitignore`.
+
+Per usare l'API è possibile inviare la chiave in uno dei due modi:
+
+```text
+x-api-key: imgf_<API_KEY>
+```
+
+oppure:
+
+```text
+Authorization: Bearer imgf_<API_KEY>
+```
+
+Esempio PowerShell:
+
+```powershell
+curl.exe -s `
+  -H "x-api-key: imgf_<API_KEY>" `
+  -F "file=@foto.jpg" `
+  -F "keepOriginal=false" `
+  -F "sizes=400x400" `
+  -F "sizes=1200x800" `
+  http://localhost:3003/api/files/upload-api
+```
+
+L'endpoint restituisce lo stesso JSON dell'upload del sito e usa la stessa
+pipeline:
+
+```text
+API key -> Multer -> validazione -> Sharp -> MinIO -> JSON
+```
+
+Una chiave mancante o non valida restituisce HTTP `401`. La chiave protegge
+l'endpoint integrabile, mentre `POST /api/files/upload` resta l'endpoint usato
+dalla UI web.
+
+### Sicurezza delle API key
+
+Il file `api-keys.json` è adatto a un ambiente locale o a un singolo server.
+Per un ambiente distribuito sarebbe preferibile salvare gli hash in un database
+con identificativo, revoca, scadenza, permessi e audit. La chiave non deve
+essere inserita nel codice frontend di un'applicazione pubblica, perché sarebbe
+visibile agli utenti: va conservata lato server o in un secret manager.

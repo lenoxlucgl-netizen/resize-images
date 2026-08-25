@@ -79,6 +79,21 @@ project-root/
 - `/api/resize` - Image resize operations
 - `/api/admin` - Admin operations
 
+### API integrabile
+
+Genera una chiave dal sito con `POST /api/auth/api-key`. La chiave viene mostrata
+una sola volta e salvata sul server soltanto come hash. Usa poi il seguente
+endpoint da un'altra applicazione:
+
+```text
+POST /api/files/upload-api
+Header: x-api-key: <API_KEY>
+Content-Type: multipart/form-data
+```
+
+I campi sono `file`, `keepOriginal` e uno o più `sizes`. L'endpoint restituisce
+lo stesso risultato del caricamento web e applica lo stesso resize su MinIO.
+
 ## Development
 
 This project uses:
