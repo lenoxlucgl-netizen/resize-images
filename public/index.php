@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="it">
 <head>
 	<meta charset="utf-8">
@@ -61,7 +61,24 @@
 		.result-head span { color:var(--muted); font:12px 'DM Mono',monospace; }
 		.gallery { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-top:20px; }
 		.tile { background:var(--white); border:1px solid var(--line); padding:10px; } .tile img { width:100%; aspect-ratio:1; object-fit:contain; background:#e9e9e0; display:block; } .tile p { margin:11px 2px 2px; font:11px 'DM Mono',monospace; color:var(--muted); }
-		@media (max-width:760px) { header { padding:20px 18px 0; } main { padding:54px 18px 50px; } .intro { display:block; } .intro p { margin-top:22px; } .workspace { grid-template-columns:1fr; } .drop { min-height:300px; } .panel { padding:24px; } }
+		/* Modal Gestisci API */
+		#apiManagerOverlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.65); z-index:1000; align-items:center; justify-content:center; }
+		#apiManagerOverlay.open { display:flex; }
+		#apiManagerModal { background:#1a2320; border:1px solid #48514a; width:100%; max-width:560px; max-height:80vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,.5); }
+		.modal-header { display:flex; justify-content:space-between; align-items:center; padding:14px 16px; border-bottom:1px solid #48514a; }
+		.modal-header h3 { margin:0; font-size:14px; color:var(--white); letter-spacing:-.03em; }
+		.modal-close { width:auto; margin:0; padding:4px 10px; background:#48514a; color:var(--white); font-size:12px; border:0; cursor:pointer; }
+		.modal-body { overflow-y:auto; padding:12px 16px; flex:1; }
+		.key-list { display:flex; flex-direction:column; gap:8px; }
+		.key-item { display:flex; justify-content:space-between; align-items:flex-start; padding:10px; background:#202a23; border:1px solid #48514a; gap:10px; }
+		.key-info { flex:1; min-width:0; }
+		.key-name { font:600 12px 'Space Grotesk',sans-serif; color:var(--white); margin:0 0 2px; }
+		.key-meta { font:10px 'DM Mono',monospace; color:#879589; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+		.key-delete { width:auto; margin:0; padding:5px 10px; background:#ff765f22; border:1px solid #ff765f66; color:#ff765f; font:11px 'DM Mono',monospace; cursor:pointer; white-space:nowrap; flex-shrink:0; }
+		.key-delete:hover { background:#ff765f44; }
+		.modal-empty { color:#879589; font:11px 'DM Mono',monospace; text-align:center; padding:24px 0; }
+		.modal-loading { color:var(--acid); font:11px 'DM Mono',monospace; text-align:center; padding:24px 0; }
+		@media (max-width:760px) { header { padding:20px 18px 0; } main { padding:54px 18px 50px; } .intro { display:block; } .intro p { margin-top:22px; } .workspace { grid-template-columns:1fr; } .drop { min-height:300px; } .panel { padding:24px; } #apiManagerModal { max-width:95vw; } }
 	</style>
 </head>
 <body>
@@ -108,7 +125,9 @@
 				<div class="api-box"><div class="eyebrow">05 / API integrabile</div><span style="display:block;margin-top:4px;color:#adb6aa;font-size:10px;line-height:1.4">Genera una chiave per usare il ridimensionamento da un'altra applicazione. Verrà associata al bucket selezionato.</span>
 				<input type="text" id="apiNameInput" placeholder="Nome API (es. Progetto X)" style="width:100%; margin-top:10px; padding:6px; border:1px solid #48514a; background:#29332c; color:var(--white); font:11px 'DM Mono',monospace;" required>
 				<select id="apiBucketSelect" style="width:100%; margin-top:6px; padding:6px; border:1px solid #48514a; background:#29332c; color:var(--white); font:11px 'DM Mono',monospace;" required><option value="">Caricamento bucket...</option></select>
-				<button id="generateApiKey" type="button">Genera API key</button><div id="apiResult" class="api-result" role="status"></div></div>
+				<button id="generateApiKey" type="button">Genera API key</button>
+				<button id="manageApiKeys" type="button" style="background:#48514a; color:var(--white); margin-top:4px;">Gestisci API</button>
+				<div id="apiResult" class="api-result" role="status"></div></div>
 			</section>
 		</form>
 		<form id="videoForm" class="workspace" style="display: none;">
@@ -124,6 +143,19 @@
 		</form>
 			<section id="results"><div class="result-head"><h2>File elaborati</h2><span id="resultSizes"></span></div><div class="gallery" id="gallery"></div></section>
 	</main>
+
+	<!-- Modal Gestisci API -->
+	<div id="apiManagerOverlay">
+		<div id="apiManagerModal" role="dialog" aria-modal="true" aria-labelledby="apiManagerTitle">
+			<div class="modal-header">
+				<h3 id="apiManagerTitle">API Key attive</h3>
+				<button class="modal-close" id="closeApiManager" type="button">✕ Chiudi</button>
+			</div>
+			<div class="modal-body">
+				<div id="keyList" class="key-list"><p class="modal-loading">Caricamento...</p></div>
+			</div>
+		</div>
+	</div>
 	<script>
 		const form = document.getElementById('uploadForm'); const input = document.getElementById('fileInput'); const zone = document.getElementById('dropZone'); const label = document.getElementById('fileLabel'); const submit = document.getElementById('submitButton'); const message = document.getElementById('message'); const customSizes = document.getElementById('customSizes'); const addSize = document.getElementById('addSize');
 		
@@ -230,6 +262,72 @@
 				document.getElementById('results').classList.add('visible');
 			} catch (error) { videoMessage.textContent = error.message; } finally { videoSubmit.disabled = false; videoSubmit.textContent = 'Carica video'; }
 		});
+
+		// Gestisci API Modal
+		const overlay = document.getElementById('apiManagerOverlay');
+		const keyList = document.getElementById('keyList');
+
+		async function loadApiKeys() {
+			keyList.innerHTML = '<p class="modal-loading">Caricamento...</p>';
+			try {
+				const res = await fetch('/api/auth/api-keys', {
+					headers: { 'Authorization': 'Bearer ' + token }
+				});
+				const data = await res.json();
+				if (!res.ok) throw new Error(data.error);
+				if (!data.keys || data.keys.length === 0) {
+					keyList.innerHTML = '<p class="modal-empty">Nessuna API key registrata.</p>';
+					return;
+				}
+				keyList.innerHTML = '';
+				data.keys.forEach(function(k) {
+					var item = document.createElement('div');
+					item.className = 'key-item';
+					var date = new Date(k.createdAt).toLocaleDateString('it-IT', { day:'2-digit', month:'short', year:'numeric' });
+					item.innerHTML = '<div class="key-info">'
+						+ '<p class="key-name">' + (k.name || '—') + '</p>'
+						+ '<span class="key-meta">Bucket: ' + k.bucket + ' · ' + date + '</span>'
+						+ '<span class="key-meta" title="' + k.hash + '">Hash: ' + k.hash.slice(0,16) + '…</span>'
+						+ '</div>'
+						+ '<button class="key-delete" data-hash="' + k.hash + '" type="button">Elimina</button>';
+					item.querySelector('.key-delete').addEventListener('click', async function(e) {
+						var btn = e.currentTarget;
+						var hash = btn.dataset.hash;
+						if (!confirm("Eliminare questa API key? L'operazione non è reversibile.")) return;
+						btn.disabled = true;
+						btn.textContent = '...';
+						try {
+							var delRes = await fetch('/api/auth/api-key/' + hash, {
+								method: 'DELETE',
+								headers: { 'Authorization': 'Bearer ' + token }
+							});
+							var delData = await delRes.json();
+							if (!delRes.ok) throw new Error(delData.error);
+							await loadApiKeys();
+						} catch(err) {
+							btn.disabled = false;
+							btn.textContent = 'Elimina';
+							alert('Errore: ' + err.message);
+						}
+					});
+					keyList.appendChild(item);
+				});
+			} catch(err) {
+				keyList.innerHTML = '<p class="modal-empty">Errore: ' + err.message + '</p>';
+			}
+		}
+
+		document.getElementById('manageApiKeys').addEventListener('click', function() {
+			overlay.classList.add('open');
+			loadApiKeys();
+		});
+		document.getElementById('closeApiManager').addEventListener('click', function() {
+			overlay.classList.remove('open');
+		});
+		overlay.addEventListener('click', function(e) {
+			if (e.target === overlay) overlay.classList.remove('open');
+		});
 	</script>
+
 </body>
 </html>
