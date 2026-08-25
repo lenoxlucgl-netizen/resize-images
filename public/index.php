@@ -43,8 +43,16 @@
 		#message { min-height:20px; margin-top:18px; color:var(--acid); font:12px 'DM Mono',monospace; }
 		.api-box { margin-top:18px; padding-top:18px; border-top:1px solid #48514a; }
 		.api-box button { margin-top:10px; background:var(--acid); }
-		#apiResult { display:none; margin-top:12px; color:#adb6aa; font:11px 'DM Mono',monospace; line-height:1.5; word-break:break-all; }
-		#apiResult.visible { display:block; }
+		.api-result { display:none; margin-top:14px; padding:14px; border:1px solid #48514a; background:#202a23; }
+		.api-result.visible { display:block; }
+		.api-status { display:flex; gap:7px; align-items:center; color:var(--acid); font:10px 'DM Mono',monospace; text-transform:uppercase; }
+		.api-status i { width:7px; height:7px; border-radius:50%; background:var(--acid); }
+		.api-label { display:block; margin-top:13px; color:#879589; font:10px 'DM Mono',monospace; text-transform:uppercase; }
+		.api-field { display:flex; align-items:center; gap:8px; margin-top:5px; }
+		.api-value { flex:1; min-width:0; padding:10px; color:var(--white); background:#172019; font:11px 'DM Mono',monospace; overflow-wrap:anywhere; }
+		.api-copy { width:auto; margin:0; padding:10px 12px; background:#48514a !important; color:var(--white); font:11px 'DM Mono',monospace; }
+		.api-snippet { margin:12px 0 0; padding:10px; overflow:auto; color:#c9d2c3; background:#151b17; font:10px 'DM Mono',monospace; line-height:1.5; white-space:pre-wrap; }
+		.api-note { display:block; margin-top:10px; color:#879589; font-size:10px; line-height:1.4; }
 		#results { display:none; margin-top:60px; } #results.visible { display:block; }
 		.result-head { display:flex; justify-content:space-between; border-bottom:1px solid var(--line); padding-bottom:14px; } .result-head h2 { margin:0; font-size:27px; letter-spacing:-.04em; }
 		.result-head span { color:var(--muted); font:12px 'DM Mono',monospace; }
@@ -66,14 +74,14 @@
 				<div class="sizes"><label class="size"><input type="checkbox" name="sizes" value="200x200" checked>200 × 200</label><label class="size"><input type="checkbox" name="sizes" value="400x400" checked>400 × 400</label><label class="size"><input type="checkbox" name="sizes" value="680x680" checked>680 × 680</label></div>
 				<div id="customSizes" class="custom-sizes"></div><button id="addSize" class="add-size" type="button">+ Aggiungi dimensione personalizzata (max 2)</button>
 				<button id="submitButton" type="submit" disabled>Seleziona un'immagine</button><div id="message" role="status"></div>
-				<div class="api-box"><div class="eyebrow">03 / API integrabile</div><span style="display:block;margin-top:8px;color:#adb6aa;font-size:12px;line-height:1.4">Genera una chiave per usare il ridimensionamento da un'altra applicazione.</span><button id="generateApiKey" type="button">Genera API key</button><div id="apiResult" role="status"></div></div>
+				<div class="api-box"><div class="eyebrow">03 / API integrabile</div><span style="display:block;margin-top:8px;color:#adb6aa;font-size:12px;line-height:1.4">Genera una chiave per usare il ridimensionamento da un'altra applicazione.</span><button id="generateApiKey" type="button">Genera API key</button><div id="apiResult" class="api-result" role="status"></div></div>
 			</section>
 		</form>
 			<section id="results"><div class="result-head"><h2>Versioni create</h2><span id="resultSizes"></span></div><div class="gallery" id="gallery"></div></section>
 	</main>
 	<script>
 		const form = document.getElementById('uploadForm'); const input = document.getElementById('fileInput'); const zone = document.getElementById('dropZone'); const label = document.getElementById('fileLabel'); const submit = document.getElementById('submitButton'); const message = document.getElementById('message'); const customSizes = document.getElementById('customSizes'); const addSize = document.getElementById('addSize');
-		document.getElementById('generateApiKey').addEventListener('click', async () => { const result = document.getElementById('apiResult'); result.textContent = 'Generazione...'; result.classList.add('visible'); try { const response = await fetch('/api/auth/api-key', { method:'POST' }); const data = await response.json(); if (!response.ok) throw new Error(data.error); result.textContent = `API key: ${data.apiKey} | Endpoint: ${data.uploadEndpoint}`; await navigator.clipboard?.writeText(data.apiKey); } catch (error) { result.textContent = error.message; } });
+		document.getElementById('generateApiKey').addEventListener('click', async () => { const result = document.getElementById('apiResult'); result.textContent = 'Generazione...'; result.classList.add('visible'); try { const response = await fetch('/api/auth/api-key', { method:'POST' }); const data = await response.json(); if (!response.ok) throw new Error(data.error); const endpoint = `${location.origin}${data.uploadEndpoint}`; result.innerHTML = `<div class="api-status"><i></i>Chiave attiva</div><span class="api-label">API key</span><div class="api-field"><code class="api-value" id="apiKeyValue"></code><button class="api-copy" id="copyApiKey" type="button">Copia</button></div><span class="api-label">Endpoint upload</span><code class="api-value" style="display:block;margin-top:5px">${endpoint}</code><pre class="api-snippet">curl -H "x-api-key: LA_TUA_CHIAVE" \\\n  -F "file=@foto.jpg" \\\n  -F "sizes=800x600" \\\n  ${endpoint}</pre><small class="api-note">Conserva questa chiave in un secret manager. Non inserirla in codice frontend pubblico.</small>`; document.getElementById('apiKeyValue').textContent = data.apiKey; document.getElementById('copyApiKey').addEventListener('click', async () => { await navigator.clipboard?.writeText(data.apiKey); document.getElementById('copyApiKey').textContent = 'Copiata'; }); await navigator.clipboard?.writeText(data.apiKey); } catch (error) { result.textContent = error.message; } });
 		addSize.addEventListener('click', () => { if (customSizes.children.length >= 2) return; const wrapper = document.createElement('label'); wrapper.className = 'custom-size'; wrapper.innerHTML = '<input name="sizes" type="text" pattern="[0-9]{1,5}x[0-9]{1,5}" placeholder="es. 1024x768" aria-label="Dimensione personalizzata">'; customSizes.appendChild(wrapper); if (customSizes.children.length >= 2) addSize.disabled = true; });
 		input.addEventListener('change', () => { const file = input.files[0]; if (file) { label.textContent = file.name; submit.disabled = false; submit.textContent = 'Crea versioni'; } });
 		['dragenter','dragover'].forEach(event => zone.addEventListener(event, e => { e.preventDefault(); zone.classList.add('dragging'); }));
