@@ -1,4 +1,4 @@
-const { PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListBucketsCommand } = require('@aws-sdk/client-s3');
 const fs = require('fs/promises');
 const path = require('path');
 const StorageConfig = require('../config/storage');
@@ -6,6 +6,14 @@ const client = StorageConfig.getClient();
 const localRoot = path.join(__dirname, '..', 'saved-images');
 
 class StorageService {
+  static async listBuckets() {
+    if ((process.env.STORAGE_TYPE || 'local') === 'local') {
+      return ['local-images']; // Dummy per ambiente locale
+    }
+    const data = await client.send(new ListBucketsCommand({}));
+    return data.Buckets ? data.Buckets.map(b => b.Name) : [];
+  }
+
   static async uploadFile(bucket, key, buffer, contentType) {
     if ((process.env.STORAGE_TYPE || 'local') === 'local') {
       const localKey = key.replace(/^[/\\]+/, '');

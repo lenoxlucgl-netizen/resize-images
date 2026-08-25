@@ -15,10 +15,15 @@ class ApiKeyService {
     }
   }
 
-  static async createKey() {
+  static async createKey(name, bucket) {
     const plainKey = `imgf_${crypto.randomBytes(32).toString('hex')}`;
     const keys = await this.readKeys();
-    keys.push({ apiKey: plainKey, hash: this.hash(plainKey), createdAt: new Date().toISOString() });
+    keys.push({ 
+      hash: this.hash(plainKey), 
+      name, 
+      bucket, 
+      createdAt: new Date().toISOString() 
+    });
     const temporaryFile = `${keyFile}.tmp`;
     await fs.writeFile(temporaryFile, JSON.stringify(keys, null, 2));
     await fs.rename(temporaryFile, keyFile);
@@ -26,13 +31,14 @@ class ApiKeyService {
   }
 
   static async isValid(plainKey) {
-    if (!plainKey) return false;
+    if (!plainKey) return null;
     const keys = await this.readKeys();
     const hash = this.hash(plainKey);
-    return keys.some(key => {
+    const validKey = keys.find(key => {
       const storedHash = typeof key.hash === 'string' ? key.hash : this.hash(key.apiKey || '');
       return storedHash.length === hash.length && crypto.timingSafeEqual(Buffer.from(storedHash), Buffer.from(hash));
     });
+    return validKey || null;
   }
 
   static hash(value) {

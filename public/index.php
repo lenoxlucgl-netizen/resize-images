@@ -65,23 +65,51 @@
 	</style>
 </head>
 <body>
-	<header><div class="brand">IMAGE <span>FORGE</span></div><div class="status"><i class="dot"></i> minio storage</div></header>
+	<header>
+		<div class="brand">IMAGE <span>FORGE</span></div>
+		<div style="display:flex; gap:15px; align-items:center;">
+			<div class="status"><i class="dot"></i> minio storage</div>
+			<button id="logoutBtn" style="width:auto; margin:0; padding:6px 12px; background:transparent; border:1px solid #48514a; color:var(--muted); font-size:11px; cursor:pointer; border-radius:6px;">Logout</button>
+		</div>
+	</header>
+	<script>
+		const token = localStorage.getItem('adminToken');
+		if (!token) window.location.href = '/';
+		document.getElementById('logoutBtn').addEventListener('click', () => {
+			localStorage.removeItem('adminToken');
+			sessionStorage.removeItem('activeApiKey');
+			window.location.href = '/';
+		});
+	</script>
 	<main>
 		<section class="intro"><h1>Ridimensiona.<br><em>Conserva.</em></h1><p>Carica un'immagine e crea automaticamente versioni ottimizzate, mantenendo le proporzioni originali.</p></section>
 		<div class="tabs">
 			<button type="button" class="tab active" id="tabFoto">Foto</button>
 			<button type="button" class="tab" id="tabVideo">Video</button>
 		</div>
+		
+		<div class="api-key-session" style="margin-bottom: 12px; background: var(--ink); padding: 12px 20px; color: var(--white); display: flex; gap: 15px; align-items: center; border: 1px solid var(--line);">
+			<span class="eyebrow" style="margin:0; min-width: 80px;">Sessione</span>
+			<input type="text" id="sessionApiKey" placeholder="Inserisci la tua API Key (obbligatoria per l'upload)" style="flex: 1; padding: 8px; border: 1px solid #48514a; background: #29332c; color: var(--white); font: 11px 'DM Mono',monospace;" required>
+		</div>
+
 		<form id="uploadForm" class="workspace">
 			<label class="drop" id="dropZone" for="fileInput"><input id="fileInput" name="file" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif,image/tiff" multiple required><span class="cross">+</span><strong id="fileLabel">Trascina qui le immagini</strong><small>oppure fai clic per sceglierle · max 15 MB</small></label>
             <section class="panel"><div class="eyebrow">01 / Destinazione</div><h2>Cosa vuoi conservare?</h2>
 				<label class="choice"><input type="radio" name="keepOriginal" value="false" checked><b>Solo modificate</b><span>L'originale non viene conservato.</span></label>
 				<label class="choice"><input type="radio" name="keepOriginal" value="true"><b>Modificate + originale</b><span>Conserva anche il file originale.</span></label>
-				<div class="eyebrow" style="margin-top:16px">02 / Dimensioni output</div>
+				<div class="eyebrow" style="margin-top:16px">02 / Percorso Originale (Opzionale)</div>
+				<input type="text" id="imageUploadPath" name="uploadPath" placeholder="es. cartella/sottocartella" style="width:100%; margin-top:6px; padding:6px; border:1px solid #48514a; background:#29332c; color:var(--white); font:11px 'DM Mono',monospace;">
+				<div class="eyebrow" style="margin-top:16px">03 / Percorso Modificate (Opzionale)</div>
+				<input type="text" id="resizedUploadPath" name="resizedPath" placeholder="Lascia vuoto per usare lo stesso percorso dell'originale" style="width:100%; margin-top:6px; padding:6px; border:1px solid #48514a; background:#29332c; color:var(--white); font:11px 'DM Mono',monospace;">
+				<div class="eyebrow" style="margin-top:16px">04 / Dimensioni output</div>
 				<div class="sizes"><label class="size"><input type="checkbox" name="sizes" value="200x200" checked>200 × 200</label><label class="size"><input type="checkbox" name="sizes" value="400x400" checked>400 × 400</label><label class="size"><input type="checkbox" name="sizes" value="680x680" checked>680 × 680</label></div>
 				<div id="customSizes" class="custom-sizes"></div><button id="addSize" class="add-size" type="button">+ Aggiungi dimensione personalizzata (max 2)</button>
 				<button id="submitButton" type="submit" disabled>Seleziona un'immagine</button><div id="message" role="status"></div>
-				<div class="api-box"><div class="eyebrow">03 / API integrabile</div><span style="display:block;margin-top:4px;color:#adb6aa;font-size:10px;line-height:1.4">Genera una chiave per usare il ridimensionamento da un'altra applicazione. Inserisci la password per autorizzare l'operazione.</span><input type="password" id="adminSecretInput" placeholder="Password admin" style="width:100%; margin-top:6px; padding:6px; border:1px solid #48514a; background:#29332c; color:var(--white); font:11px 'DM Mono',monospace;"><button id="generateApiKey" type="button">Genera API key</button><div id="apiResult" class="api-result" role="status"></div></div>
+				<div class="api-box"><div class="eyebrow">05 / API integrabile</div><span style="display:block;margin-top:4px;color:#adb6aa;font-size:10px;line-height:1.4">Genera una chiave per usare il ridimensionamento da un'altra applicazione. Verrà associata al bucket selezionato.</span>
+				<input type="text" id="apiNameInput" placeholder="Nome API (es. Progetto X)" style="width:100%; margin-top:10px; padding:6px; border:1px solid #48514a; background:#29332c; color:var(--white); font:11px 'DM Mono',monospace;" required>
+				<select id="apiBucketSelect" style="width:100%; margin-top:6px; padding:6px; border:1px solid #48514a; background:#29332c; color:var(--white); font:11px 'DM Mono',monospace;" required><option value="">Caricamento bucket...</option></select>
+				<button id="generateApiKey" type="button">Genera API key</button><div id="apiResult" class="api-result" role="status"></div></div>
 			</section>
 		</form>
 		<form id="videoForm" class="workspace" style="display: none;">
@@ -89,6 +117,8 @@
 			<section class="panel">
 				<div class="eyebrow">01 / Storage</div><h2>Salvataggio Video</h2>
 				<p style="color:var(--muted); line-height:1.5; margin-bottom: 20px;">I video verranno salvati su MinIO nel loro formato originale (senza ridimensionamento).</p>
+				<div class="eyebrow">02 / Percorso di salvataggio (Opzionale)</div>
+				<input type="text" id="videoUploadPath" name="uploadPath" placeholder="es. cartella/video" style="width:100%; margin-top:6px; margin-bottom: 20px; padding:6px; border:1px solid #48514a; background:#29332c; color:var(--white); font:11px 'DM Mono',monospace;">
 				<button id="videoSubmitButton" type="submit" disabled>Seleziona un video</button>
 				<div id="videoMessage" role="status"></div>
 			</section>
@@ -97,21 +127,58 @@
 	</main>
 	<script>
 		const form = document.getElementById('uploadForm'); const input = document.getElementById('fileInput'); const zone = document.getElementById('dropZone'); const label = document.getElementById('fileLabel'); const submit = document.getElementById('submitButton'); const message = document.getElementById('message'); const customSizes = document.getElementById('customSizes'); const addSize = document.getElementById('addSize');
-		document.getElementById('generateApiKey').addEventListener('click', async () => { const result = document.getElementById('apiResult'); const secret = document.getElementById('adminSecretInput').value; result.textContent = 'Generazione...'; result.classList.add('visible'); try { const response = await fetch('/api/auth/api-key', { method:'POST', headers: { 'x-admin-secret': secret } }); const data = await response.json(); if (!response.ok) throw new Error(data.error); const endpoint = `${location.origin}${data.uploadEndpoint}`; result.innerHTML = `<div class="api-status"><i></i>Chiave attiva</div><span class="api-label">API key</span><div class="api-field"><code class="api-value" id="apiKeyValue"></code><button class="api-copy" id="copyApiKey" type="button">Copia</button></div><span class="api-label">Endpoint upload</span><code class="api-value" style="display:block;margin-top:5px">${endpoint}</code><pre class="api-snippet">curl -H "x-api-key: LA_TUA_CHIAVE" \\\n  -F "file=@foto.jpg" \\\n  -F "sizes=800x600" \\\n  ${endpoint}</pre><small class="api-note">Conserva questa chiave in un secret manager. Non inserirla in codice frontend pubblico.</small>`; document.getElementById('apiKeyValue').textContent = data.apiKey; document.getElementById('copyApiKey').addEventListener('click', async () => { await navigator.clipboard?.writeText(data.apiKey); document.getElementById('copyApiKey').textContent = 'Copiata'; }); await navigator.clipboard?.writeText(data.apiKey); } catch (error) { result.textContent = error.message; } });
+		
+		const sessionApiInput = document.getElementById('sessionApiKey');
+		if (sessionStorage.getItem('activeApiKey')) {
+			sessionApiInput.value = sessionStorage.getItem('activeApiKey');
+		}
+		sessionApiInput.addEventListener('input', (e) => {
+			sessionStorage.setItem('activeApiKey', e.target.value.trim());
+		});
+
+		document.getElementById('generateApiKey').addEventListener('click', async () => { const result = document.getElementById('apiResult'); const name = document.getElementById('apiNameInput').value; const bucket = document.getElementById('apiBucketSelect').value; if (!name || !bucket) { result.textContent = 'Inserisci nome e seleziona un bucket'; result.classList.add('visible'); return; } result.textContent = 'Generazione...'; result.classList.add('visible'); try { const response = await fetch('/api/auth/api-key', { method:'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ name, bucket }) }); const data = await response.json(); if (!response.ok) throw new Error(data.error); const endpoint = `${location.origin}${data.uploadEndpoint}`; result.innerHTML = `<div class="api-status"><i></i>Chiave attiva</div><span class="api-label">API key (VISIBILE SOLO ORA)</span><div class="api-field" id="apiFieldContainer"><code class="api-value" id="apiKeyValue"></code><button class="api-copy" id="copyApiKey" type="button">Copia</button></div><span class="api-label">Endpoint upload</span><code class="api-value" style="display:block;margin-top:5px">${endpoint}</code><pre class="api-snippet">curl -H "x-api-key: LA_TUA_CHIAVE" \\\n  -F "file=@foto.jpg" \\\n  -F "sizes=800x600" \\\n  ${endpoint}</pre><small class="api-note">Conserva questa chiave in un secret manager. Non inserirla in codice frontend pubblico.</small>`; document.getElementById('apiKeyValue').textContent = data.apiKey; document.getElementById('copyApiKey').addEventListener('click', async () => { await navigator.clipboard?.writeText(data.apiKey); document.getElementById('apiFieldContainer').innerHTML = '<span style="color:var(--acid); font:11px monospace">Chiave nascosta per sicurezza. Se l\'hai persa, generane un\'altra.</span>'; }); } catch (error) { result.textContent = error.message; } });
+		
+		// Fetch buckets on load
+		async function loadBuckets() {
+			try {
+				const res = await fetch('/api/files/buckets', { headers: { 'Authorization': `Bearer ${token}` } });
+				if (res.ok) {
+					const data = await res.json();
+					const select = document.getElementById('apiBucketSelect');
+					select.innerHTML = '<option value="">-- Seleziona Bucket --</option>';
+					data.buckets.forEach(b => {
+						const opt = document.createElement('option');
+						opt.value = b; opt.textContent = b;
+						select.appendChild(opt);
+					});
+				}
+			} catch (e) { console.error('Errore nel caricamento dei bucket', e); }
+		}
+		loadBuckets();
 		addSize.addEventListener('click', () => { if (customSizes.children.length >= 2) return; const wrapper = document.createElement('label'); wrapper.className = 'custom-size'; wrapper.innerHTML = '<input name="sizes" type="text" pattern="[0-9]{1,5}x[0-9]{1,5}" placeholder="es. 1024x768" aria-label="Dimensione personalizzata">'; customSizes.appendChild(wrapper); if (customSizes.children.length >= 2) addSize.disabled = true; });
 		input.addEventListener('change', () => { if (input.files.length > 0) { label.textContent = input.files.length === 1 ? input.files[0].name : `${input.files.length} file selezionati`; submit.disabled = false; submit.textContent = 'Crea versioni'; } else { label.textContent = "Trascina qui le immagini"; submit.disabled = true; } });
 		['dragenter','dragover'].forEach(event => zone.addEventListener(event, e => { e.preventDefault(); zone.classList.add('dragging'); }));
 		['dragleave','drop'].forEach(event => zone.addEventListener(event, e => { e.preventDefault(); zone.classList.remove('dragging'); }));
 		zone.addEventListener('drop', e => { if (e.dataTransfer.files[0]) { input.files = e.dataTransfer.files; input.dispatchEvent(new Event('change')); } });
-		form.addEventListener('submit', async e => { e.preventDefault(); const selectedSizes = [...form.querySelectorAll('input[name="sizes"]')].filter(size => size.type === 'checkbox' ? size.checked : size.value.trim()); if (!selectedSizes.length) { message.textContent = 'Seleziona almeno una dimensione'; return; } submit.disabled = true; submit.textContent = 'Elaborazione in corso...'; message.textContent = 'Invio a MinIO e creazione varianti'; document.getElementById('results').classList.remove('visible'); const keepOriginal = form.querySelector('input[name="keepOriginal"]:checked').value; const gallery = document.getElementById('gallery'); gallery.innerHTML = '';
+		form.addEventListener('submit', async e => { 
+			e.preventDefault(); 
+			const currentApiKey = sessionApiInput.value.trim();
+			if (!currentApiKey) { message.textContent = 'Errore: Inserisci la tua API Key in alto'; return; }
+			const selectedSizes = [...form.querySelectorAll('input[name="sizes"]')].filter(size => size.type === 'checkbox' ? size.checked : size.value.trim()); if (!selectedSizes.length) { message.textContent = 'Seleziona almeno una dimensione'; return; } submit.disabled = true; submit.textContent = 'Elaborazione in corso...'; message.textContent = 'Invio a MinIO e creazione varianti'; document.getElementById('results').classList.remove('visible'); const keepOriginal = form.querySelector('input[name="keepOriginal"]:checked').value; const gallery = document.getElementById('gallery'); gallery.innerHTML = '';
 			try {
 				const files = Array.from(input.files);
 				const promises = files.map(async file => {
 					const formData = new FormData();
 					formData.append('file', file);
 					formData.append('keepOriginal', keepOriginal);
+					formData.append('path', document.getElementById('imageUploadPath').value.trim());
+					formData.append('resizedPath', document.getElementById('resizedUploadPath').value.trim());
 					selectedSizes.forEach(size => formData.append('sizes', size.value));
-					const response = await fetch('/api/files/upload', { method:'POST', body: formData });
+					const response = await fetch('/api/files/upload-api', { 
+						method:'POST', 
+						headers: { 'x-api-key': currentApiKey },
+						body: formData 
+					});
 					const data = await response.json();
 					if (!response.ok) throw new Error(data.error || 'Upload non riuscito');
 					return data;
@@ -135,13 +202,21 @@
 		videoZone.addEventListener('drop', e => { if (e.dataTransfer.files[0]) { videoInput.files = e.dataTransfer.files; videoInput.dispatchEvent(new Event('change')); } });
 		
 		videoForm.addEventListener('submit', async e => {
-			e.preventDefault(); videoSubmit.disabled = true; videoSubmit.textContent = 'Caricamento in corso...'; videoMessage.textContent = 'Invio a MinIO in corso...';
+			e.preventDefault(); 
+			const currentApiKey = sessionApiInput.value.trim();
+			if (!currentApiKey) { videoMessage.textContent = 'Errore: Inserisci la tua API Key in alto'; return; }
+			videoSubmit.disabled = true; videoSubmit.textContent = 'Caricamento in corso...'; videoMessage.textContent = 'Invio a MinIO in corso...';
 			document.getElementById('results').classList.remove('visible'); const gallery = document.getElementById('gallery'); gallery.innerHTML = '';
 			try {
 				const files = Array.from(videoInput.files);
 				const promises = files.map(async file => {
 					const formData = new FormData(); formData.append('file', file);
-					const response = await fetch('/api/files/upload', { method:'POST', body: formData });
+					formData.append('path', document.getElementById('videoUploadPath').value.trim());
+					const response = await fetch('/api/files/upload-api', { 
+						method:'POST', 
+						headers: { 'x-api-key': currentApiKey },
+						body: formData 
+					});
 					const data = await response.json();
 					if (!response.ok) throw new Error(data.error || 'Upload non riuscito');
 					return data;

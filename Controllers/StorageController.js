@@ -6,13 +6,25 @@ class StorageController {
     try {
       if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
-      const bucket = process.env.MINIO_BUCKET || 'local-images';
+      // Usa il bucket autorizzato dall'API key, oppure quello di default
+      const bucket = req.authorizedBucket || process.env.MINIO_BUCKET || 'savedimages';
+      
+      let customPath = req.body.path ? req.body.path.trim() : '';
+      customPath = customPath.replace(/^[\/\\]+/, '').replace(/[\/\\]+$/, ''); // Rimuove slash iniziali/finali
+      if (customPath.includes('..')) return res.status(400).json({ error: 'Percorso non valido' });
+
+      let customResizedPath = req.body.resizedPath !== undefined ? req.body.resizedPath.trim() : null;
+      if (customResizedPath !== null) {
+          customResizedPath = customResizedPath.replace(/^[\/\\]+/, '').replace(/[\/\\]+$/, '');
+          if (customResizedPath.includes('..')) return res.status(400).json({ error: 'Percorso modificate non valido' });
+      }
+
       const cleanName = req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, '-');
-      const key = cleanName;
+      const key = customPath ? `${customPath}/${cleanName}` : cleanName;
       const isVideo = req.file.mimetype.startsWith('video/');
 
       if (isVideo) {
-        const videoKey = `videos/${key}`;
+        const videoKey = customPath ? `${customPath}/${cleanName}` : `videos/${cleanName}`;
         await StorageService.uploadFile(bucket, videoKey, req.file.buffer, req.file.mimetype);
         return res.status(201).json({ 
           original: videoKey,
@@ -32,11 +44,11 @@ class StorageController {
         return res.status(400).json({ error: 'Seleziona almeno una dimensione valida' });
       }
 
-      const { variants, originalDimension } = await ResizeService.processImage(req.file.buffer, key, bucket, sizes);
+      const { variants, originalDimension } = await ResizeService.processImage(req.file.buffer, cleanName, bucket, sizes, customPath, customResizedPath);
       
-      const ext = key.split('.').pop();
-      const baseName = key.substring(0, key.lastIndexOf('.'));
-      const originalFinalKey = `${baseName}-${originalDimension}.${ext}`;
+      const ext = cleanName.split('.').pop();
+      const baseName = cleanName.substring(0, cleanName.lastIndexOf('.'));
+      const originalFinalKey = customPath ? `${customPath}/${baseName}-${originalDimension}.${ext}` : `${baseName}-${originalDimension}.${ext}`;
 
       if (keepOriginal) {
         await StorageService.uploadFile(bucket, originalFinalKey, req.file.buffer, req.file.mimetype);
