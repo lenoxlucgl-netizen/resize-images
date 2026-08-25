@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Image Forge | Resize</title>
+	<title>Image Resize | Resize</title>
 	<style>
 		@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 		:root { --ink:#19211d; --muted:#69746c; --paper:#f4f1e9; --line:#d5d8cb; --acid:#d6f26a; --coral:#ff765f; --white:#fffdf8; }
@@ -66,7 +66,7 @@
 </head>
 <body>
 	<header>
-		<div class="brand">IMAGE <span>FORGE</span></div>
+		<div class="brand">IMAGE <span>RESIZE</span></div>
 		<div style="display:flex; gap:15px; align-items:center;">
 			<div class="status"><i class="dot"></i> minio storage</div>
 			<button id="logoutBtn" style="width:auto; margin:0; padding:6px 12px; background:transparent; border:1px solid #48514a; color:var(--muted); font-size:11px; cursor:pointer; border-radius:6px;">Logout</button>

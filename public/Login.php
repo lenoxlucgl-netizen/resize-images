@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Forge | Login Admin</title>
+    <title>Image Resize | Login Admin</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap');
         :root { --ink:#19211d; --muted:#69746c; --paper:#f4f1e9; --line:#d5d8cb; --acid:#d6f26a; --coral:#ff765f; --white:#fffdf8; }
@@ -46,7 +46,7 @@
 </head>
 <body>
     <div class="login-card">
-        <div class="brand">IMAGE <span>FORGE</span></div>
+        <div class="brand">IMAGE <span>RESIZE</span></div>
         <span class="eyebrow">Area Riservata Amministratore</span>
         <form id="loginForm">
             <div class="input-group">
