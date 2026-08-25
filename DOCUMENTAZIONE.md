@@ -801,9 +801,12 @@ La risposta contiene la chiave in chiaro una sola volta:
 }
 ```
 
-Il server non salva la chiave in chiaro. Calcola un hash SHA-256 e salva
-soltanto hash e data di creazione nel file locale `api-keys.json`, escluso dal
-repository tramite `.gitignore`.
+Il file locale `api-keys.json` conserva tutte le chiavi generate insieme alla
+data di creazione e all'hash SHA-256. Il file è escluso dal repository tramite
+`.gitignore`, ma resta nel progetto e viene riletto a ogni richiesta API.
+Per questo motivo una chiave rimane funzionante dopo i riavvii finché la sua
+voce resta nel file. Cancellando una voce dal file, quella chiave viene
+disabilitata alla richiesta successiva.
 
 Per usare l'API è possibile inviare la chiave in uno dei due modi:
 
