@@ -35,6 +35,10 @@
 		.sizes { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:12px; }
 		.size { position:relative; padding:12px 8px; border:1px solid #48514a; text-align:center; cursor:pointer; font:12px 'DM Mono',monospace; }
 		.size input { position:absolute; opacity:0; } .size:has(input:checked) { border-color:var(--acid); background:#29332c; color:var(--acid); }
+		.custom-sizes { display:grid; gap:8px; margin-top:8px; }
+		.custom-size { display:flex; gap:8px; }
+		.custom-size input { width:100%; padding:11px; border:1px solid #48514a; background:#29332c; color:var(--white); font:12px 'DM Mono',monospace; }
+		.add-size { margin-top:8px; padding:10px; border:1px dashed #68756a; background:transparent; color:#adb6aa; font:12px 'DM Mono',monospace; }
 		button { width:100%; margin-top:22px; padding:16px; border:0; background:var(--coral); color:var(--ink); font:600 15px 'Space Grotesk',sans-serif; cursor:pointer; } button:disabled { opacity:.45; cursor:not-allowed; }
 		#message { min-height:20px; margin-top:18px; color:var(--acid); font:12px 'DM Mono',monospace; }
 		#results { display:none; margin-top:60px; } #results.visible { display:block; }
@@ -56,13 +60,15 @@
 				<label class="choice"><input type="radio" name="keepOriginal" value="true"><b>Modificate + originale</b><span>Conserva anche il file caricato insieme alle versioni ridimensionate.</span></label>
 				<div class="eyebrow" style="margin-top:28px">02 / Dimensioni output</div>
 				<div class="sizes"><label class="size"><input type="checkbox" name="sizes" value="200x200" checked>200 × 200</label><label class="size"><input type="checkbox" name="sizes" value="400x400" checked>400 × 400</label><label class="size"><input type="checkbox" name="sizes" value="680x680" checked>680 × 680</label></div>
+				<div id="customSizes" class="custom-sizes"></div><button id="addSize" class="add-size" type="button">+ Aggiungi dimensione personalizzata (max 2)</button>
 				<button id="submitButton" type="submit" disabled>Seleziona un'immagine</button><div id="message" role="status"></div>
 			</section>
 		</form>
 			<section id="results"><div class="result-head"><h2>Versioni create</h2><span id="resultSizes"></span></div><div class="gallery" id="gallery"></div></section>
 	</main>
 	<script>
-		const form = document.getElementById('uploadForm'); const input = document.getElementById('fileInput'); const zone = document.getElementById('dropZone'); const label = document.getElementById('fileLabel'); const submit = document.getElementById('submitButton'); const message = document.getElementById('message');
+		const form = document.getElementById('uploadForm'); const input = document.getElementById('fileInput'); const zone = document.getElementById('dropZone'); const label = document.getElementById('fileLabel'); const submit = document.getElementById('submitButton'); const message = document.getElementById('message'); const customSizes = document.getElementById('customSizes'); const addSize = document.getElementById('addSize');
+		addSize.addEventListener('click', () => { if (customSizes.children.length >= 2) return; const wrapper = document.createElement('label'); wrapper.className = 'custom-size'; wrapper.innerHTML = '<input name="sizes" type="text" pattern="[0-9]{1,5}x[0-9]{1,5}" placeholder="es. 1024x768" aria-label="Dimensione personalizzata">'; customSizes.appendChild(wrapper); if (customSizes.children.length >= 2) addSize.disabled = true; });
 		input.addEventListener('change', () => { const file = input.files[0]; if (file) { label.textContent = file.name; submit.disabled = false; submit.textContent = 'Crea versioni'; } });
 		['dragenter','dragover'].forEach(event => zone.addEventListener(event, e => { e.preventDefault(); zone.classList.add('dragging'); }));
 		['dragleave','drop'].forEach(event => zone.addEventListener(event, e => { e.preventDefault(); zone.classList.remove('dragging'); }));
