@@ -8,45 +8,45 @@
 		@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 		:root { --ink:#19211d; --muted:#69746c; --paper:#f4f1e9; --line:#d5d8cb; --acid:#d6f26a; --coral:#ff765f; --white:#fffdf8; }
 		* { box-sizing:border-box; }
-		body { margin:0; min-height:100vh; color:var(--ink); background:var(--paper); font-family:'Space Grotesk', sans-serif; }
+		body { margin:0; min-height:100vh; color:var(--ink); background:var(--paper); font-family:'Space Grotesk', sans-serif; display:flex; flex-direction:column; }
 		body:before { content:''; position:fixed; inset:0; pointer-events:none; opacity:.18; background-image:linear-gradient(90deg, transparent 49%, #b8c0b2 50%, transparent 51%),linear-gradient(#b8c0b2 1px,transparent 1px); background-size:72px 72px; }
-		header { position:relative; display:flex; justify-content:space-between; align-items:center; max-width:1180px; margin:auto; padding:14px 28px 0; }
-		.brand { font-weight:700; letter-spacing:-.04em; font-size:20px; } .brand span { color:#728a2c; }
-		.tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-		.tab { padding: 10px 20px; background: transparent; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; color: var(--muted); font-weight: 500; font-size: 15px; }
+		header { position:relative; display:flex; justify-content:space-between; align-items:center; max-width:1180px; margin:auto; padding:4px 20px 0; }
+		.brand { font-weight:700; letter-spacing:-.04em; font-size:18px; } .brand span { color:#728a2c; }
+		.tabs { display: flex; gap: 8px; margin-bottom: 8px; }
+		.tab { padding: 6px 14px; background: transparent; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; color: var(--muted); font-weight: 500; font-size: 13px; }
 		.tab.active { background: var(--ink); color: var(--white); border-color: var(--ink); }
 		.status { display:flex; gap:8px; align-items:center; font:12px 'DM Mono', monospace; text-transform:uppercase; color:var(--muted); }
 		.dot { width:8px; height:8px; border-radius:50%; background:#80aa3e; }
-		main { position:relative; max-width:1180px; margin:0 auto; padding:20px 28px 40px; }
-		.intro { display:flex; justify-content:space-between; gap:30px; align-items:end; margin-bottom:16px; }
-		h1 { max-width:700px; margin:0; font-size:clamp(32px,5vw,64px); line-height:.92; letter-spacing:-.07em; }
-		.intro p { max-width:250px; margin:0 0 5px; color:var(--muted); line-height:1.4; font-size: 14px; }
-		.workspace { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(310px,.75fr); gap:18px; }
-		.drop { min-height:260px; display:flex; flex-direction:column; justify-content:center; align-items:center; border:1.5px dashed #8c9787; background:rgba(255,253,248,.72); cursor:pointer; transition:.2s ease; }
-		.drop:hover,.drop.dragging { border-color:var(--ink); background:var(--acid); transform:translateY(-3px); }
-		.drop strong { font-size:24px; margin:20px 0 8px; } .drop small { color:var(--muted); }
-		.cross { width:74px; height:74px; display:grid; place-items:center; border:1px solid var(--ink); border-radius:50%; font-size:38px; font-weight:300; }
+		main { position:relative; max-width:1180px; width:100%; margin:0 auto; padding:6px 20px 8px; display:flex; flex-direction:column; flex:1; min-height:0; }
+		.intro { display:flex; justify-content:space-between; gap:15px; align-items:end; margin-bottom:6px; }
+		h1 { max-width:700px; margin:0; font-size:clamp(22px,3.5vw,38px); line-height:.92; letter-spacing:-.07em; }
+		.intro p { max-width:250px; margin:0 0 5px; color:var(--muted); line-height:1.4; font-size: 12px; }
+		.workspace { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(310px,.75fr); gap:12px; flex:1; min-height:0; }
+		.drop { height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; border:1.5px dashed #8c9787; background:rgba(255,253,248,.72); cursor:pointer; transition:.2s ease; }
+		.drop:hover,.drop.dragging { border-color:var(--ink); background:var(--acid); transform:translateY(-2px); }
+		.drop strong { font-size:18px; margin:8px 0 4px; } .drop small { color:var(--muted); font-size: 11px; }
+		.cross { width:50px; height:50px; display:grid; place-items:center; border:1px solid var(--ink); border-radius:50%; font-size:28px; font-weight:300; }
 		input[type=file] { display:none; }
-		.panel { padding:20px; background:var(--ink); color:var(--white); }
-		.eyebrow { color:var(--acid); font:11px 'DM Mono',monospace; text-transform:uppercase; letter-spacing:.08em; }
-		.panel h2 { margin:8px 0 16px; font-size:22px; letter-spacing:-.04em; }
-		.choice { display:block; position:relative; padding:12px 12px 12px 35px; border:1px solid #48514a; margin:6px 0; cursor:pointer; transition:.2s; }
+		.panel { height:100%; min-height:0; padding:12px; background:var(--ink); color:var(--white); overflow-y:auto; }
+		.eyebrow { color:var(--acid); font:10px 'DM Mono',monospace; text-transform:uppercase; letter-spacing:.08em; }
+		.panel h2 { margin:2px 0 6px; font-size:15px; letter-spacing:-.04em; }
+		.choice { display:block; position:relative; padding:6px 10px 6px 28px; border:1px solid #48514a; margin:2px 0; cursor:pointer; transition:.2s; }
 		.choice:hover { border-color:var(--acid); } .choice input { position:absolute; opacity:0; }
-		.choice:before { content:''; position:absolute; left:12px; top:15px; width:15px; height:15px; border:1px solid #aeb8a9; border-radius:50%; }
-		.choice:has(input:checked) { border-color:var(--acid); background:#29332c; } .choice:has(input:checked):before { background:var(--acid); box-shadow:inset 0 0 0 4px #29332c; }
-		.choice b { display:block; font-size:14px; } .choice span { display:block; margin-top:3px; color:#adb6aa; font-size:11px; line-height:1.3; }
-		.sizes { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:12px; }
-		.size { position:relative; padding:12px 8px; border:1px solid #48514a; text-align:center; cursor:pointer; font:12px 'DM Mono',monospace; }
+		.choice:before { content:''; position:absolute; left:8px; top:9px; width:12px; height:12px; border:1px solid #aeb8a9; border-radius:50%; }
+		.choice:has(input:checked) { border-color:var(--acid); background:#29332c; } .choice:has(input:checked):before { background:var(--acid); box-shadow:inset 0 0 0 3px #29332c; }
+		.choice b { display:block; font-size:12px; } .choice span { display:block; margin-top:1px; color:#adb6aa; font-size:10px; line-height:1.2; }
+		.sizes { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; margin-top:6px; }
+		.size { position:relative; padding:6px 4px; border:1px solid #48514a; text-align:center; cursor:pointer; font:11px 'DM Mono',monospace; }
 		.size input { position:absolute; opacity:0; } .size:has(input:checked) { border-color:var(--acid); background:#29332c; color:var(--acid); }
-		.custom-sizes { display:grid; gap:8px; margin-top:8px; }
-		.custom-size { display:flex; gap:8px; }
-		.custom-size input { width:100%; padding:8px; border:1px solid #48514a; background:#29332c; color:var(--white); font:12px 'DM Mono',monospace; }
-		.add-size { margin-top:6px; padding:8px; border:1px dashed #68756a; background:transparent; color:#adb6aa; font:12px 'DM Mono',monospace; }
-		button { width:100%; margin-top:14px; padding:12px; border:0; background:var(--coral); color:var(--ink); font:600 14px 'Space Grotesk',sans-serif; cursor:pointer; } button:disabled { opacity:.45; cursor:not-allowed; }
-		#message { min-height:20px; margin-top:12px; color:var(--acid); font:12px 'DM Mono',monospace; }
-		.api-box { margin-top:12px; padding-top:12px; border-top:1px solid #48514a; }
-		.api-box button { margin-top:8px; background:var(--acid); }
-		.api-result { display:none; margin-top:14px; padding:14px; border:1px solid #48514a; background:#202a23; }
+		.custom-sizes { display:grid; gap:4px; margin-top:4px; }
+		.custom-size { display:flex; gap:4px; }
+		.custom-size input { width:100%; padding:4px; border:1px solid #48514a; background:#29332c; color:var(--white); font:11px 'DM Mono',monospace; }
+		.add-size { margin-top:2px; padding:4px; border:1px dashed #68756a; background:transparent; color:#adb6aa; font:11px 'DM Mono',monospace; }
+		button { width:100%; margin-top:6px; padding:8px; border:0; background:var(--coral); color:var(--ink); font:600 13px 'Space Grotesk',sans-serif; cursor:pointer; } button:disabled { opacity:.45; cursor:not-allowed; }
+		#message { min-height:16px; margin-top:4px; color:var(--acid); font:11px 'DM Mono',monospace; }
+		.api-box { margin-top:8px; padding-top:8px; border-top:1px solid #48514a; }
+		.api-box button { margin-top:4px; background:var(--acid); }
+		.api-result { display:none; margin-top:8px; padding:8px; border:1px solid #48514a; background:#202a23; }
 		.api-result.visible { display:block; }
 		.api-status { display:flex; gap:7px; align-items:center; color:var(--acid); font:10px 'DM Mono',monospace; text-transform:uppercase; }
 		.api-status i { width:7px; height:7px; border-radius:50%; background:var(--acid); }
@@ -81,7 +81,7 @@
 				<div class="sizes"><label class="size"><input type="checkbox" name="sizes" value="200x200" checked>200 × 200</label><label class="size"><input type="checkbox" name="sizes" value="400x400" checked>400 × 400</label><label class="size"><input type="checkbox" name="sizes" value="680x680" checked>680 × 680</label></div>
 				<div id="customSizes" class="custom-sizes"></div><button id="addSize" class="add-size" type="button">+ Aggiungi dimensione personalizzata (max 2)</button>
 				<button id="submitButton" type="submit" disabled>Seleziona un'immagine</button><div id="message" role="status"></div>
-				<div class="api-box"><div class="eyebrow">03 / API integrabile</div><span style="display:block;margin-top:8px;color:#adb6aa;font-size:12px;line-height:1.4">Genera una chiave per usare il ridimensionamento da un'altra applicazione. Inserisci la password per autorizzare l'operazione.</span><input type="password" id="adminSecretInput" placeholder="Password admin" style="width:100%; margin-top:12px; padding:11px; border:1px solid #48514a; background:#29332c; color:var(--white); font:12px 'DM Mono',monospace;"><button id="generateApiKey" type="button">Genera API key</button><div id="apiResult" class="api-result" role="status"></div></div>
+				<div class="api-box"><div class="eyebrow">03 / API integrabile</div><span style="display:block;margin-top:4px;color:#adb6aa;font-size:10px;line-height:1.4">Genera una chiave per usare il ridimensionamento da un'altra applicazione. Inserisci la password per autorizzare l'operazione.</span><input type="password" id="adminSecretInput" placeholder="Password admin" style="width:100%; margin-top:6px; padding:6px; border:1px solid #48514a; background:#29332c; color:var(--white); font:11px 'DM Mono',monospace;"><button id="generateApiKey" type="button">Genera API key</button><div id="apiResult" class="api-result" role="status"></div></div>
 			</section>
 		</form>
 		<form id="videoForm" class="workspace" style="display: none;">
