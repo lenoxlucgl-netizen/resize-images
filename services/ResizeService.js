@@ -3,16 +3,17 @@ const StorageService = require('./StorageService');
 const resizeConfig = require('../config/resize');
 
 class ResizeService {
-  static async processImage(originalBuffer, originalKey, bucket) {
+  static async processImage(originalBuffer, originalKey, bucket, sizes = resizeConfig.sizes) {
     const image = sharp(originalBuffer);
     const metadata = await image.metadata();
     const results = [];
 
-    for (const size of resizeConfig.sizes) {
+    for (const size of sizes) {
       const [width, height] = size.split('x').map(Number);
       const ext = originalKey.split('.').pop();
       const baseName = originalKey.substring(0, originalKey.lastIndexOf('.'));
-      const outputKey = `${resizeConfig.resizedPath}${baseName}_${size}.${ext}`;
+      const resizedPath = resizeConfig.resizedPath.replace(/^[/\\]+|[/\\]+$/g, '');
+      const outputKey = `${resizedPath}/${baseName}_${size}.${ext}`;
 
       const resizedBuffer = await image
         .clone()

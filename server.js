@@ -5,10 +5,19 @@ const helmet = require('helmet');
 const app = express();
 
 const PORT = process.env.PORT || 3003;
+const path = require('path');
 
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: { scriptSrc: ["'self'", "'unsafe-inline'"] }
+  }
+}));
 app.use(cors());
 app.use(express.json());
+app.use('/saved-images', express.static(path.join(__dirname, 'saved-images')));
+app.get('/', (req, res) => {
+  res.type('html').sendFile(path.join(__dirname, 'public', 'index.php'));
+});
 
 // Routes registration
 const storageRoutes = require('./Routes/storage.routes');

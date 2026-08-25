@@ -6,9 +6,10 @@ S3 Compatible Image Storage with Auto-Resize functionality.
 
 - Node.js >= 18.0.0
 - npm or yarn
-- PostgreSQL database
-- Redis server
-- MinIO or compatible S3 storage (optional, can use AWS S3)
+
+L'app salva le immagini nel bucket MinIO `savedimages`. La Console è raggiungibile
+da `http://127.0.0.1:62192/browser/savedimages`, mentre l'endpoint API S3 usato
+dall'app è `http://127.0.0.1:9000`.
 
 ## Installation
 
@@ -23,13 +24,7 @@ cd resize-images-platform
 npm install
 ```
 
-3. Configure environment variables:
-Copy `.env.example` to `.env` and update the values according to your setup:
-```bash
-cp .env.example .env
-```
-
-4. Start the application:
+3. Start the application:
 
 **Development mode:**
 ```bash
@@ -41,13 +36,17 @@ npm run dev
 npm start
 ```
 
+Apri `http://localhost:3003`. La pagina consente di caricare JPEG, PNG, WebP,
+GIF, AVIF o TIFF, scegliere una o più dimensioni e decidere se mantenere anche
+l'originale. Tutti gli oggetti vengono salvati in `savedimages/thumbs/`.
+
 ## Environment Variables
 
 See `.env` file for all available configuration options:
 
 - **PORT**: Server port (default: 3000)
 - **DB_HOST**, **DB_PORT**, **DB_NAME**, **DB_USER**, **DB_PASSWORD**: PostgreSQL connection
-- **STORAGE_TYPE**: Storage provider (minio, rustfs, aws-s3)
+- **STORAGE_TYPE**: Storage provider (`local`, `minio`, `rustfs`, `aws-s3`)
 - **MINIO_ENDPOINT**, **MINIO_ROOT_USER**, **MINIO_ROOT_PASSWORD**: MinIO configuration
 - **REDIS_HOST**, **REDIS_PORT**: Redis connection
 - **JWT_SECRET**, **JWT_REFRESH_SECRET**: Authentication tokens
