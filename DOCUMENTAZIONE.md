@@ -777,76 +777,160 @@ L'originale viene salvato alla radice del bucket solo quando è stata selezionat
 
 ---
 
-## 17. API integrabile con API key
+## 17. Integrazione API ed Esempi
 
-Il progetto espone un secondo endpoint di upload pensato per essere utilizzato
-da applicazioni esterne:
+Il progetto espone endpoint pensati per essere utilizzati da applicazioni esterne. Durante i test, queste API sono state completamente verificate confermando il corretto funzionamento dell'autenticazione, dell'upload (compresi validazione formati e size) e del retrieve delle varianti su MinIO.
 
-```text
-POST /api/files/upload-api
-```
+### 17.1 Generazione API Key
 
-Prima bisogna generare una chiave:
+Per generare una chiave, devi chiamare il seguente endpoint:
 
 ```text
 POST /api/auth/api-key
 ```
 
-La risposta contiene la chiave in chiaro una sola volta:
+**Nota di Sicurezza:** L'endpoint richiede l'intestazione (header) `x-admin-secret`. Questo valore deve corrispondere esattamente alla variabile `ADMIN_SECRET` definita nel tuo file `.env`. Se l'header non è fornito o è errato, il server restituisce `403 Forbidden` (`{"error":"Non autorizzato a generare API key"}`). In questo modo le API non possono generare incontrollatamente altre API!
+
+La risposta in caso di successo (HTTP 201) contiene la chiave in chiaro **una sola volta**:
 
 ```json
 {
-  "apiKey": "imgf_<valore casuale>",
+  "apiKey": "imgf_3082ab365d1bff27dfe3b01c52d4db79eb164705ef8371299e9f92f9da504b38",
   "uploadEndpoint": "/api/files/upload-api"
 }
 ```
 
-Il file locale `api-keys.json` conserva tutte le chiavi generate insieme alla
-data di creazione e all'hash SHA-256. Il file è escluso dal repository tramite
-`.gitignore`, ma resta nel progetto e viene riletto a ogni richiesta API.
-Per questo motivo una chiave rimane funzionante dopo i riavvii finché la sua
-voce resta nel file. Cancellando una voce dal file, quella chiave viene
-disabilitata alla richiesta successiva.
+Il file locale `api-keys.json` conserva gli hash SHA-256 (non le chiavi in chiaro).
 
-Per usare l'API è possibile inviare la chiave in uno dei due modi:
+### 17.2 Upload tramite API
+
+L'endpoint protetto per il caricamento remoto è:
 
 ```text
-x-api-key: imgf_<API_KEY>
+POST /api/files/upload-api
 ```
 
-oppure:
+Per usare l'API è possibile inviare la chiave generata in uno dei due modi:
+- `x-api-key: imgf_<API_KEY>`
+- `Authorization: Bearer imgf_<API_KEY>`
 
-```text
-Authorization: Bearer imgf_<API_KEY>
+La risposta testata di successo (HTTP 201) quando si sceglie di mantenere l'originale (`keepOriginal: true`) e ridimensionare a `100x100` e `50x50` è:
+
+```json
+{
+  "original": "test.png",
+  "keepOriginal": true,
+  "variants": [
+    "thumbs/test_100x100.png",
+    "thumbs/test_50x50.png"
+  ],
+  "message": "Immagine salvata con originali"
+}
 ```
 
-Esempio PowerShell:
+### 17.3 Esempi di Integrazione nel Codice
 
-```powershell
-curl.exe -s `
-  -H "x-api-key: imgf_<API_KEY>" `
-  -F "file=@foto.jpg" `
-  -F "keepOriginal=false" `
-  -F "sizes=400x400" `
-  -F "sizes=1200x800" `
+Di seguito esempi pratici per integrare il caricamento in altri linguaggi e framework.
+
+#### Node.js (Axios)
+```javascript
+const axios = require('axios');
+const FormData = require('form-data');
+const fs = require('fs');
+
+async function uploadImage() {
+  const form = new FormData();
+  form.append('file', fs.createReadStream('test.jpg'));
+  form.append('keepOriginal', 'true');
+  form.append('sizes', '200x200');
+  form.append('sizes', '800x600');
+
+  try {
+    const response = await axios.post('http://localhost:3003/api/files/upload-api', form, {
+      headers: {
+        ...form.getHeaders(),
+        'x-api-key': 'imgf_TUA_CHIAVE'
+      }
+    });
+    console.log(response.data);
+  } catch (error) {
+    console.error(error.response ? error.response.data : error.message);
+  }
+}
+uploadImage();
+```
+
+#### Python (Requests)
+```python
+import requests
+
+url = "http://localhost:3003/api/files/upload-api"
+headers = {
+    "x-api-key": "imgf_TUA_CHIAVE"
+}
+
+with open("test.jpg", "rb") as f:
+    files = {"file": f}
+    data = {
+        "keepOriginal": "true",
+        "sizes": ["200x200", "800x600"]
+    }
+    
+    response = requests.post(url, headers=headers, files=files, data=data)
+    print(response.json())
+```
+
+#### PHP (cURL)
+```php
+<?php
+$ch = curl_init();
+
+$cfile = new CURLFile(realpath('test.jpg'), 'image/jpeg', 'test.jpg');
+
+$data = array(
+    'file' => $cfile,
+    'keepOriginal' => 'true',
+    'sizes[0]' => '200x200',
+    'sizes[1]' => '800x600'
+);
+
+curl_setopt($ch, CURLOPT_URL, "http://localhost:3003/api/files/upload-api");
+curl_setopt($ch, CURLOPT_POST, 1);
+curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+    "x-api-key: imgf_TUA_CHIAVE"
+));
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+$response = curl_exec($ch);
+curl_close($ch);
+
+echo $response;
+?>
+```
+
+#### Bash / Shell / PowerShell (cURL)
+```bash
+curl -X POST -H "x-api-key: imgf_TUA_CHIAVE" \
+  -F "file=@test.jpg" \
+  -F "keepOriginal=true" \
+  -F "sizes=100x100" \
+  -F "sizes=50x50" \
   http://localhost:3003/api/files/upload-api
 ```
 
-L'endpoint restituisce lo stesso JSON dell'upload del sito e usa la stessa
-pipeline:
+### 17.4 Recupero Oggetti (Retrieve)
+
+Puoi sempre recuperare l'immagine caricata senza API Key effettuando una richiesta GET alla route che funge da proxy verso MinIO:
 
 ```text
-API key -> Multer -> validazione -> Sharp -> MinIO -> JSON
+GET http://localhost:3003/api/files/object/thumbs/test_100x100.png
 ```
 
-Una chiave mancante o non valida restituisce HTTP `401`. La chiave protegge
-l'endpoint integrabile, mentre `POST /api/files/upload` resta l'endpoint usato
-dalla UI web.
+Se il file esiste, il backend restituisce il file in stream con il corretto `Content-Type` (es. `image/png` o `image/jpeg`) e `HTTP 200 OK`. In caso contrario, restituirà un `404 Not Found`.
 
-### Sicurezza delle API key
+---
 
-Il file `api-keys.json` è adatto a un ambiente locale o a un singolo server.
-Per un ambiente distribuito sarebbe preferibile salvare gli hash in un database
-con identificativo, revoca, scadenza, permessi e audit. La chiave non deve
-essere inserita nel codice frontend di un'applicazione pubblica, perché sarebbe
-visibile agli utenti: va conservata lato server o in un secret manager.
+## 18. Sicurezza delle API key e Considerazioni
+
+Il file `api-keys.json` è adatto a un ambiente locale o a un singolo server. Per un ambiente distribuito sarebbe preferibile salvare gli hash in un database con identificativo, revoca, scadenza, permessi e audit. La chiave non deve MAI essere inserita nel codice frontend di un'applicazione pubblica (come una web-app in React/Vue esposta all'utente), perché sarebbe visibile e utilizzabile da chiunque per aggirare l'interfaccia: va conservata unicamente lato server. L'endpoint di generazione `POST /api/auth/api-key` ora impedisce agli attaccanti di creare ulteriori chiavi, blindando efficacemente l'uso del servizio.

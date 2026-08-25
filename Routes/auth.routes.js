@@ -8,6 +8,13 @@ router.post('/login', (req, res) => {
 
 router.post('/api-key', async (req, res) => {
   try {
+    const adminSecret = process.env.ADMIN_SECRET;
+    const providedSecret = req.headers['x-admin-secret'];
+
+    if (!adminSecret || providedSecret !== adminSecret) {
+      return res.status(403).json({ error: 'Non autorizzato a generare API key' });
+    }
+
     const apiKey = await ApiKeyService.createKey();
     res.status(201).json({ apiKey, uploadEndpoint: '/api/files/upload-api' });
   } catch (error) {
