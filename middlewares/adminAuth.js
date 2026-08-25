@@ -1,4 +1,4 @@
-const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
 module.exports = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -7,12 +7,12 @@ module.exports = (req, res, next) => {
   }
 
   const token = authHeader.split(' ')[1];
+  const expectedToken = crypto.createHmac('sha256', process.env.JWT_SECRET || 'fallback_secret').update(process.env.ADMIN_USERNAME || 'admin').digest('hex');
 
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.admin = decoded; 
+  if (token === expectedToken) {
+    req.admin = { username: process.env.ADMIN_USERNAME };
     next();
-  } catch (error) {
-    return res.status(403).json({ error: 'Token non valido o scaduto' });
+  } else {
+    return res.status(403).json({ error: 'Token non valido' });
   }
 };

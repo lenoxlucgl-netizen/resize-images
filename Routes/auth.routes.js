@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const ApiKeyService = require('../services/ApiKeyService');
 const adminAuth = require('../middlewares/adminAuth');
@@ -11,7 +10,7 @@ router.post('/login', (req, res) => {
   const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
   
   if (username === process.env.ADMIN_USERNAME && passwordHash === process.env.ADMIN_PASSWORD_HASH) {
-    const token = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '8h' });
+    const token = crypto.createHmac('sha256', process.env.JWT_SECRET || 'fallback_secret').update(username).digest('hex');
     return res.json({ token });
   }
   
