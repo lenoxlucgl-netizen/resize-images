@@ -1,6 +1,6 @@
 # Executable MinIO locale
 minio.exe
-minio.windows-amd64.RELEASE-*.exe
+minio.windows-amd64.RELEASE.*.exe
 
 # Runtime data and local dependencies
 node_modules/
