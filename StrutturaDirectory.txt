@@ -1,0 +1,55 @@
+project-root/
+├── docker-compose.yml
+├── Dockerfile
+├── .env.example
+├── package.json
+├── src/
+│   ├── config/
+│   │   ├── database.js
+│   │   ├── storage.js
+│   │   ├── resize.js
+│   │   └── ai.js
+│   ├── models/
+│   │   ├── User.js
+│   │   ├── Bucket.js
+│   │   ├── File.js
+│   │   ├── ResizeJob.js
+│   │   └── EventLog.js
+│   ├── services/
+│   │   ├── StorageService.js
+│   │   ├── ResizeService.js
+│   │   ├── ModerationService.js
+│   │   ├── EventService.js
+│   │   └── AuthService.js
+│   ├── controllers/
+│   │   ├── AuthController.js
+│   │   ├── StorageController.js
+│   │   ├── BucketController.js
+│   │   ├── ResizeController.js
+│   │   └── AdminController.js
+│   ├── routes/
+│   │   ├── auth.routes.js
+│   │   ├── storage.routes.js
+│   │   ├── bucket.routes.js
+│   │   ├── resize.routes.js
+│   │   └── admin.routes.js
+│   ├── middlewares/
+│   │   ├── auth.js
+│   │   ├── roles.js
+│   │   ├── upload.js
+│   │   └── validation.js
+│   ├── jobs/
+│   │   ├── resize.worker.js
+│   │   └── moderation.worker.js
+│   ├── events/
+│   │   └── image.events.js
+│   ├── utils/
+│   │   ├── s3Client.js
+│   │   └── logger.js
+│   ├── app.js
+│   └── server.js
+├── frontend/ (Next.js + Tailwind)
+│   ├── pages/
+│   ├── components/
+│   └── ...
+└── tests/
