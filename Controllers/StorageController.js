@@ -7,6 +7,21 @@ class StorageController {
       if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
       const bucket = process.env.MINIO_BUCKET || 'local-images';
+      const cleanName = req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, '-');
+      const key = cleanName;
+      const isVideo = req.file.mimetype.startsWith('video/');
+
+      if (isVideo) {
+        const videoKey = `videos/${key}`;
+        await StorageService.uploadFile(bucket, videoKey, req.file.buffer, req.file.mimetype);
+        return res.status(201).json({ 
+          original: videoKey,
+          keepOriginal: true,
+          variants: [],
+          message: 'Video salvato correttamente'
+        });
+      }
+
       const keepOriginal = req.body.keepOriginal !== 'false';
       const requestedSizes = Array.isArray(req.body.sizes) ? req.body.sizes : [req.body.sizes];
       const sizes = requestedSizes.map(size => String(size || '').trim()).filter(Boolean);
@@ -16,8 +31,6 @@ class StorageController {
       })) {
         return res.status(400).json({ error: 'Seleziona almeno una dimensione valida' });
       }
-      const cleanName = req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, '-');
-      const key = cleanName;
 
       const { variants, originalDimension } = await ResizeService.processImage(req.file.buffer, key, bucket, sizes);
       
