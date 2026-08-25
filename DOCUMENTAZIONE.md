@@ -6,13 +6,13 @@ Questo progetto è una piattaforma Node.js/Express per il caricamento e il ridim
 
 Il flusso principale consente di:
 
-1. aprire una pagina web;
-2. selezionare o trascinare un'immagine;
-3. scegliere se conservare anche il file originale;
-4. scegliere una o più dimensioni di output;
-5. generare automaticamente le varianti mantenendo le proporzioni;
-6. salvare originale e varianti in un bucket MinIO compatibile S3;
-7. visualizzare nella pagina le varianti appena create.
+1. aprire una pagina web (suddivisa nei tab **Foto** e **Video**);
+2. selezionare o trascinare immagini o video;
+3. specificare opzionalmente percorsi (cartelle) personalizzati e un bucket di destinazione;
+4. per le immagini, scegliere se conservare anche il file originale e selezionare una o più dimensioni di output (le varianti verranno generate mantenendo le proporzioni);
+5. per i video, salvare il file nel formato originale senza ridimensionamenti;
+6. salvare i file in un bucket MinIO compatibile S3;
+7. visualizzare nella pagina l'esito e le immagini/video salvati.
 
 L'idea funzionale prende spunto dall'estensione Firebase **Storage Resize Images**, ma non integra Firebase e non contiene il codice dell'estensione. Il progetto replica solamente il comportamento generale di elaborazione e archiviazione delle immagini, adattandolo a Express, Sharp e MinIO.
 
@@ -164,19 +164,27 @@ Il client viene costruito in `config/storage.js` tramite `S3Client`:
 
 La UI è definita in `public/index.php`.
 
-Offre:
+Offre due tab principali: **Foto** e **Video**.
 
-- selezione file dal browser;
-- drag-and-drop;
-- filtro dei formati immagine accettati;
-- limite visivo di 15 MB;
+**Tab Foto**:
+- selezione file dal browser o drag-and-drop;
+- filtro dei formati immagine accettati (limite visivo di 15 MB);
+- opzioni per specificare il *Percorso Originale* e il *Percorso Modificate* nel bucket;
 - scelta tra conservare o non conservare l'originale;
 - tre dimensioni predefinite: `200x200`, `400x400`, `680x680`;
 - massimo due campi aggiuntivi per dimensioni personalizzate;
 - messaggi di avanzamento o errore;
 - galleria delle varianti prodotte.
 
-I tre preset possono essere selezionati tramite checkbox. Il pulsante `+ Aggiungi dimensione personalizzata` crea un campo nel formato:
+**Tab Video**:
+- selezione file video o drag-and-drop (limite visivo di 100 MB);
+- opzione per specificare il *Percorso di salvataggio* nel bucket;
+- i video vengono caricati nel loro formato originale (non vengono ridimensionati).
+
+**Gestione API e Autenticazione**:
+Nella UI è presente un campo "Sessione" in cui incollare una API Key valida per poter effettuare upload. È inoltre possibile generare nuove API Key (selezionando il Bucket desiderato) se autenticati come amministratori.
+
+I tre preset delle immagini possono essere selezionati tramite checkbox. Il pulsante `+ Aggiungi dimensione personalizzata` crea un campo nel formato:
 
 ```text
 larghezza x altezza
@@ -224,7 +232,7 @@ Multer usa `memoryStorage()`, quindi il file viene tenuto in memoria durante l'e
 
 ### 6.2 Formati accettati
 
-La route accetta questi MIME type:
+La route accetta questi MIME type per le immagini:
 
 - `image/jpeg`;
 - `image/png`;
@@ -233,9 +241,17 @@ La route accetta questi MIME type:
 - `image/avif`;
 - `image/tiff`.
 
-La dimensione massima della richiesta è 15 MB.
+Per i video accetta:
+- `video/mp4`;
+- `video/webm`;
+- `video/quicktime`;
+- `video/x-msvideo`.
 
-Il filtro MIME è un primo controllo pratico, ma non sostituisce una verifica completa del contenuto binario dell'immagine.
+Se il file è un video, viene salvato integralmente alla posizione indicata (o in `videos/`) senza subire ridimensionamenti.
+
+La dimensione massima consigliata e bloccata lato UI è di 15 MB per le foto e 100 MB per i video.
+
+Il filtro MIME è un primo controllo pratico, ma non sostituisce una verifica completa del contenuto binario.
 
 ### 6.3 Validazione delle dimensioni
 
@@ -514,7 +530,7 @@ Non richiede autenticazione.
 POST /api/auth/login
 ```
 
-La route attuale è un placeholder.
+Restituisce un token HMAC generato usando la chiave `APP_SECRET` per autenticare l'utente amministratore, previa validazione delle credenziali. JWT non viene più utilizzato, essendo stato sostituito da questo meccanismo custom e dalle API key.
 
 ### Bucket
 
@@ -783,7 +799,7 @@ Per generare una chiave, devi chiamare il seguente endpoint:
 POST /api/auth/api-key
 ```
 
-**Nota di Sicurezza:** L'endpoint richiede l'intestazione (header) `x-admin-secret`. Questo valore deve corrispondere esattamente alla variabile `ADMIN_SECRET` definita nel tuo file `.env`. Se l'header non è fornito o è errato, il server restituisce `403 Forbidden` (`{"error":"Non autorizzato a generare API key"}`). In questo modo le API non possono generare incontrollatamente altre API!
+**Nota di Sicurezza:** L'endpoint richiede l'autenticazione. Devi fornire un header `Authorization: Bearer <token>`, dove il token è ottenuto dalla rotta `POST /api/auth/login` (che implementa un'autenticazione basata su HMAC). Inoltre occorre fornire nel body il `name` dell'API Key e il `bucket` a cui sarà autorizzata a scrivere. In questo modo le API non possono generare incontrollatamente altre API.
 
 La risposta in caso di successo (HTTP 201) contiene la chiave in chiaro **una sola volta**:
 
