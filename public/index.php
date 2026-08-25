@@ -87,10 +87,9 @@
 			<button type="button" class="tab active" id="tabFoto">Foto</button>
 			<button type="button" class="tab" id="tabVideo">Video</button>
 		</div>
-		
-		<div class="api-key-session" style="margin-bottom: 12px; background: var(--ink); padding: 12px 20px; color: var(--white); display: flex; gap: 15px; align-items: center; border: 1px solid var(--line);">
-			<span class="eyebrow" style="margin:0; min-width: 80px;">Sessione</span>
-			<input type="text" id="sessionApiKey" placeholder="Inserisci la tua API Key (obbligatoria per l'upload)" style="flex: 1; padding: 8px; border: 1px solid #48514a; background: #29332c; color: var(--white); font: 11px 'DM Mono',monospace;" required>
+		<div class="api-key-session" style="margin-bottom: 12px; background: var(--ink); padding: 12px 20px; color: var(--white); display: flex; gap: 15px; align-items: center; border: 1px solid var(--line); flex-wrap: wrap;">
+			<span class="eyebrow" style="margin:0; min-width: 60px;">Sessione</span>
+			<input type="text" id="sessionApiKey" placeholder="Inserisci la tua API Key" style="flex: 1; min-width: 200px; padding: 8px; border: 1px solid #48514a; background: #29332c; color: var(--white); font: 11px 'DM Mono',monospace;" required>
 		</div>
 
 		<form id="uploadForm" class="workspace">
@@ -173,6 +172,8 @@
 					formData.append('keepOriginal', keepOriginal);
 					formData.append('path', document.getElementById('imageUploadPath').value.trim());
 					formData.append('resizedPath', document.getElementById('resizedUploadPath').value.trim());
+					const selectedBucket = document.getElementById('apiBucketSelect').value.trim();
+					if (selectedBucket) formData.append('bucket', selectedBucket);
 					selectedSizes.forEach(size => formData.append('sizes', size.value));
 					const response = await fetch('/api/files/upload-api', { 
 						method:'POST', 
@@ -212,6 +213,8 @@
 				const promises = files.map(async file => {
 					const formData = new FormData(); formData.append('file', file);
 					formData.append('path', document.getElementById('videoUploadPath').value.trim());
+					const selectedBucket = document.getElementById('apiBucketSelect').value.trim();
+					if (selectedBucket) formData.append('bucket', selectedBucket);
 					const response = await fetch('/api/files/upload-api', { 
 						method:'POST', 
 						headers: { 'x-api-key': currentApiKey },

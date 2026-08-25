@@ -6,13 +6,15 @@ class StorageController {
     try {
       if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
-      const requestedBucket = req.body.bucket ? req.body.bucket.trim() : null;
-      if (req.authorizedBucket && requestedBucket && req.authorizedBucket !== requestedBucket) {
+      // Il bucket di destinazione è quello richiesto, altrimenti quello di default
+      const targetBucket = (req.body.bucket && req.body.bucket.trim()) ? req.body.bucket.trim() : (process.env.MINIO_BUCKET || 'savedimages');
+
+      // Se l'API key è limitata a un bucket, deve coincidere con il bucket di destinazione
+      if (req.authorizedBucket && req.authorizedBucket !== targetBucket) {
         return res.status(403).json({ error: 'Questa API non possiede i permessi per scrivere in questo Bucket' });
       }
 
-      // Usa il bucket autorizzato dall'API key, quello richiesto, oppure quello di default
-      const bucket = req.authorizedBucket || requestedBucket || process.env.MINIO_BUCKET || 'savedimages';
+      const bucket = targetBucket;
       let customPath = req.body.path ? req.body.path.trim() : '';
       customPath = customPath.replace(/^[\/\\]+/, '').replace(/[\/\\]+$/, ''); // Rimuove slash iniziali/finali
       if (customPath.includes('..')) return res.status(400).json({ error: 'Percorso non valido' });
