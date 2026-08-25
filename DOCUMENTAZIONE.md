@@ -249,7 +249,7 @@ Le regole sono:
 - nessun duplicato;
 - formato obbligatorio `numero x numero`;
 - larghezza e altezza composte da massimo cinque cifre;
-- larghezza e altezza diverse da zero.
+- larghezza e altezza maggiore di zero.
 
 Esempio valido:
 
@@ -514,7 +514,7 @@ Non richiede autenticazione.
 POST /api/auth/login
 ```
 
-La route attuale è ancora un placeholder e non usa davvero il controller JWT.
+La route attuale è un placeholder.
 
 ### Bucket
 
@@ -531,8 +531,6 @@ Richiedono il middleware di autenticazione.
 GET  /api/resize/jobs/:fileId
 POST /api/resize/trigger/:fileId
 ```
-
-Richiedono autenticazione. Il trigger manuale è attualmente simulato e restituisce un messaggio senza eseguire una vera elaborazione.
 
 ### Amministrazione
 
@@ -579,10 +577,6 @@ Non vengono avviati da `server.js` e non ci sono script npm dedicati per avviarl
 `ModerationService.js` è predisposto per una moderazione tramite provider AI, ma le implementazioni attuali sono placeholder o non completano realmente il ciclo di sostituzione con placeholder.
 
 La moderazione non viene eseguita automaticamente durante l'upload web corrente.
-
-### 11.5 Autenticazione
-
-Sono presenti middleware JWT e controller per autenticazione, ma il login esposto dalla route è ancora da implementare. L'endpoint di upload è attualmente pubblico.
 
 ---
 
