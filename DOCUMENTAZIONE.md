@@ -560,26 +560,13 @@ Richiede autenticazione e ruolo `admin`.
 
 ## 11. Componenti predisposti ma non parte del flusso principale
 
-### 11.1 PostgreSQL e Models
-
-I modelli sotto `Models/` sono predisposti per utenti, bucket, file, job di resize ed eventi.
-
-Tuttavia il percorso attuale di upload è indipendente dal database:
-
-- non crea un record in `File`;
-- non crea un record in `ResizeJob`;
-- non registra eventi in `EventLog`;
-- non richiede una connessione PostgreSQL per generare le varianti.
-
-Non sono presenti migrazioni o uno schema completo delle tabelle.
-
-### 11.2 Redis e EventService
+### 11.1 Redis e EventService
 
 `EventService.js` è predisposto per pubblicare eventi tramite Redis e registrarli nel database.
 
 L'upload sincrono corrente non invoca `EventService.emit`.
 
-### 11.3 Worker
+### 11.2 Worker
 
 Sono presenti:
 
@@ -587,14 +574,6 @@ Sono presenti:
 - `jobs/moderation.worker.js`.
 
 Non vengono avviati da `server.js` e non ci sono script npm dedicati per avviarli. Il flusso funzionante usa direttamente il `ResizeService` nella richiesta HTTP.
-
-### 11.4 Moderazione AI
-
-`ModerationService.js` è predisposto per una moderazione tramite provider AI, ma le implementazioni attuali sono placeholder o non completano realmente il ciclo di sostituzione con placeholder.
-
-La moderazione non viene eseguita automaticamente durante l'upload web corrente.
-
----
 
 ## 12. Configurazione resize
 
@@ -747,7 +726,7 @@ Questo progetto implementa il nucleo richiesto: upload, resize multiplo, naming 
 
 Il flusso web principale è operativo, ma prima di un uso pubblico o di produzione andrebbero affrontati questi punti:
 
-1. le credenziali e i secret presenti in `.env` non dovrebbero essere committati;
+1. le credenziali e i secret non sono committati;
 2. l'upload dovrebbe avere autenticazione, rate limiting e quote;
 3. CORS dovrebbe essere limitato ai domini autorizzati;
 4. il contenuto reale del file dovrebbe essere verificato oltre al MIME dichiarato;
