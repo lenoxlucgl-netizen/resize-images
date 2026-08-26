@@ -34,10 +34,38 @@ router.get('/my-buckets', apiKey, async (req, res) => {
 
 router.post('/upload-api', apiKey, upload.single('file'), StorageController.upload);
 
+router.get('/list/:bucket', apiKey, async (req, res) => {
+  try {
+    const bucket = req.params.bucket;
+    if (req.authorizedBucket !== '*' && req.authorizedBucket !== bucket) {
+      return res.status(403).json({ error: 'Accesso negato al bucket' });
+    }
+    const files = await StorageService.listObjects(bucket);
+    res.json({ files });
+  } catch (error) {
+    res.status(500).json({ error: 'Errore nel recupero della lista file' });
+  }
+});
+
+router.delete('/object/:bucket/*', apiKey, async (req, res) => {
+  try {
+    const bucket = req.params.bucket;
+    const key = req.params[0];
+    if (req.authorizedBucket !== '*' && req.authorizedBucket !== bucket) {
+      return res.status(403).json({ error: 'Accesso negato al bucket' });
+    }
+    await StorageService.deleteFile(bucket, key);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Errore durante l\'eliminazione del file' });
+  }
+});
+
 router.get('/object/*', async (req, res) => {
 	try {
 		const key = req.params[0];
-		const object = await StorageService.getFile(process.env.MINIO_BUCKET || 'savedimages', key);
+		const bucket = req.query.bucket || process.env.MINIO_BUCKET || 'savedimages';
+		const object = await StorageService.getFile(bucket, key);
 		res.set('Content-Type', object.ContentType || 'application/octet-stream');
 		object.Body.pipe(res);
 	} catch (error) {

@@ -1,0 +1,4 @@
+Più file insieme di diverso tipo nella sezione file e più immagini o video nelle rispettive sezioni. 
+I file già presenti non debbono restituire l'errore ma debbano sovrascrivere il file.
+Nuova sezione chiamata File Presenti.
+Dentro la sezione File Presenti la possibilità di scegliere un bucket e visualizzare i file all'interno ed eventualmente eliminarli.

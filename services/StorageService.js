@@ -1,4 +1,4 @@
-const { PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListBucketsCommand, HeadObjectCommand } = require('@aws-sdk/client-s3');
+const { PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListBucketsCommand, HeadObjectCommand, ListObjectsV2Command } = require('@aws-sdk/client-s3');
 const fs = require('fs/promises');
 const path = require('path');
 const StorageConfig = require('../config/storage');
@@ -12,6 +12,26 @@ class StorageService {
     }
     const data = await client.send(new ListBucketsCommand({}));
     return data.Buckets ? data.Buckets.map(b => b.Name) : [];
+  }
+
+  static async listObjects(bucket) {
+    if ((process.env.STORAGE_TYPE || 'local') === 'local') {
+      const files = [];
+      async function scan(dir) {
+        try {
+          const entries = await fs.readdir(dir, { withFileTypes: true });
+          for (let e of entries) {
+            const p = path.join(dir, e.name);
+            if (e.isDirectory()) await scan(p);
+            else files.push(p.replace(localRoot + path.sep, '').replace(/\\/g, '/'));
+          }
+        } catch (err) {}
+      }
+      await scan(localRoot);
+      return files.map(key => ({ Key: key }));
+    }
+    const data = await client.send(new ListObjectsV2Command({ Bucket: bucket }));
+    return data.Contents || [];
   }
 
   static async fileExists(bucket, key) {

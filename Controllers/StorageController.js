@@ -33,11 +33,9 @@ class StorageController {
       if (!isImage) {
         const folder = req.file.mimetype.startsWith('video/') ? 'videos' : 'files';
         const fileKey = customPath ? `${customPath}/${cleanName}` : `${folder}/${cleanName}`;
-        if (await StorageService.fileExists(bucket, fileKey)) {
-          return res.status(409).json({ error: 'Errore: File già presente' });
-        }
         await StorageService.uploadFile(bucket, fileKey, req.file.buffer, req.file.mimetype);
         return res.status(201).json({ 
+          bucket,
           original: fileKey,
           keepOriginal: true,
           variants: [],
@@ -47,11 +45,9 @@ class StorageController {
 
       if (req.body.keepOriginal === 'only') {
         const originalFinalKey = customPath ? `${customPath}/${cleanName}` : cleanName;
-        if (await StorageService.fileExists(bucket, originalFinalKey)) {
-          return res.status(409).json({ error: 'Errore: Immagine già presente' });
-        }
         await StorageService.uploadFile(bucket, originalFinalKey, req.file.buffer, req.file.mimetype);
         return res.status(201).json({ 
+          bucket,
           original: originalFinalKey,
           keepOriginal: true,
           variants: [],
@@ -69,15 +65,7 @@ class StorageController {
         return res.status(400).json({ error: 'Seleziona almeno una dimensione valida' });
       }
 
-      // Controlla se la prima variante esiste per bloccare in anticipo il processo sui duplicati
-      const firstSize = sizes[0];
-      const ext = cleanName.split('.').pop();
-      const baseName = cleanName.substring(0, cleanName.lastIndexOf('.'));
-      const finalResizedPath = customResizedPath !== null ? customResizedPath : customPath;
-      const firstOutputKey = finalResizedPath ? `${finalResizedPath}/${baseName}-${firstSize}.${ext}` : `${baseName}-${firstSize}.${ext}`;
-      if (await StorageService.fileExists(bucket, firstOutputKey)) {
-        return res.status(409).json({ error: 'Errore: Immagine già presente' });
-      }
+      // Il processo di salvataggio varianti sovrascriverà i file esistenti
 
       const { variants, originalDimension } = await ResizeService.processImage(req.file.buffer, cleanName, bucket, sizes, customPath, customResizedPath);
       
@@ -88,6 +76,7 @@ class StorageController {
       }
 
       res.status(201).json({ 
+        bucket,
         original: keepOriginal ? originalFinalKey : null,
         keepOriginal,
         variants,

@@ -104,6 +104,7 @@
 			<button type="button" class="tab active" id="tabTutti">Tutti i file</button>
 			<button type="button" class="tab" id="tabFoto">Foto</button>
 			<button type="button" class="tab" id="tabVideo">Video</button>
+			<button type="button" class="tab" id="tabFiles">File Presenti</button>
 		</div>
 		<div class="api-key-session" style="margin-bottom: 12px; background: var(--ink); padding: 12px 20px; color: var(--white); display: flex; gap: 15px; align-items: center; border: 1px solid var(--line); flex-wrap: wrap;">
 			<span class="eyebrow" style="margin:0; min-width: 60px;">Sessione</span>
@@ -155,6 +156,15 @@
 				<div id="allMessage" role="status"></div>
 			</section>
 		</form>
+		<section id="filesSection" class="workspace" style="display: none; grid-template-columns: 1fr;">
+			<section class="panel" style="width: 100%;">
+				<div class="eyebrow">01 / Gestione</div><h2>File nel Bucket</h2>
+				<p style="color:var(--muted); line-height:1.5; margin-bottom: 20px;">Visualizza o elimina i file presenti nel bucket correntemente selezionato.</p>
+				<button id="loadFilesBtn" type="button" style="margin-bottom: 20px;">Carica lista file</button>
+				<div id="existingFilesList" style="display: flex; flex-direction: column; gap: 10px;"></div>
+				<div id="existingFilesMessage" role="status" style="margin-top: 15px;"></div>
+			</section>
+		</section>
 			<section id="results"><div class="result-head"><h2>File elaborati</h2><span id="resultSizes"></span></div><div class="gallery" id="gallery"></div></section>
 	</main>
 
@@ -286,26 +296,87 @@
 				});
 				const results = await Promise.all(promises);
 				message.textContent = `${results.length} immagini elaborate con successo!`; document.getElementById('resultSizes').textContent = selectedSizes.map(size => size.value.replace('x',' × ')).join(' · '); 
-				results.forEach(data => { data.variants.forEach(key => { const tile = document.createElement('article'); tile.className = 'tile'; tile.innerHTML = `<img src="/api/files/object/${encodeURIComponent(key)}" alt="Versione ridimensionata"><p>${key.split('/').pop()}</p>`; gallery.appendChild(tile); }); }); document.getElementById('results').classList.add('visible');
+				results.forEach(data => { data.variants.forEach(key => { const tile = document.createElement('article'); tile.className = 'tile'; tile.innerHTML = `<img src="/api/files/object/${encodeURIComponent(key)}?bucket=${encodeURIComponent(data.bucket)}" alt="Versione ridimensionata"><p>${key.split('/').pop()}</p>`; gallery.appendChild(tile); }); }); document.getElementById('results').classList.add('visible');
 			} catch (error) { message.textContent = error.message; } finally { submit.disabled = false; submit.textContent = 'Crea versioni'; }
 		});
 
 		// Tabs and Views
-		const tabTutti = document.getElementById('tabTutti'); const tabFoto = document.getElementById('tabFoto'); const tabVideo = document.getElementById('tabVideo'); 
-		const allForm = document.getElementById('allForm'); const videoForm = document.getElementById('videoForm');
+		const tabTutti = document.getElementById('tabTutti'); const tabFoto = document.getElementById('tabFoto'); const tabVideo = document.getElementById('tabVideo'); const tabFiles = document.getElementById('tabFiles');
+		const allForm = document.getElementById('allForm'); const videoForm = document.getElementById('videoForm'); const filesSection = document.getElementById('filesSection');
 		
 		tabTutti.addEventListener('click', () => { 
-			tabTutti.classList.add('active'); tabFoto.classList.remove('active'); tabVideo.classList.remove('active'); 
-			allForm.style.display = 'grid'; form.style.display = 'none'; videoForm.style.display = 'none'; 
+			tabTutti.classList.add('active'); tabFoto.classList.remove('active'); tabVideo.classList.remove('active'); tabFiles.classList.remove('active');
+			allForm.style.display = 'grid'; form.style.display = 'none'; videoForm.style.display = 'none'; filesSection.style.display = 'none'; document.getElementById('results').style.display = 'block';
 		});
 		tabFoto.addEventListener('click', () => { 
-			tabFoto.classList.add('active'); tabTutti.classList.remove('active'); tabVideo.classList.remove('active'); 
-			form.style.display = 'grid'; allForm.style.display = 'none'; videoForm.style.display = 'none'; 
+			tabFoto.classList.add('active'); tabTutti.classList.remove('active'); tabVideo.classList.remove('active'); tabFiles.classList.remove('active');
+			form.style.display = 'grid'; allForm.style.display = 'none'; videoForm.style.display = 'none'; filesSection.style.display = 'none'; document.getElementById('results').style.display = 'block';
 		});
 		tabVideo.addEventListener('click', () => { 
-			tabVideo.classList.add('active'); tabTutti.classList.remove('active'); tabFoto.classList.remove('active'); 
-			videoForm.style.display = 'grid'; allForm.style.display = 'none'; form.style.display = 'none'; 
+			tabVideo.classList.add('active'); tabTutti.classList.remove('active'); tabFoto.classList.remove('active'); tabFiles.classList.remove('active');
+			videoForm.style.display = 'grid'; allForm.style.display = 'none'; form.style.display = 'none'; filesSection.style.display = 'none'; document.getElementById('results').style.display = 'block';
 		});
+		tabFiles.addEventListener('click', () => { 
+			tabFiles.classList.add('active'); tabTutti.classList.remove('active'); tabFoto.classList.remove('active'); tabVideo.classList.remove('active');
+			filesSection.style.display = 'grid'; allForm.style.display = 'none'; form.style.display = 'none'; videoForm.style.display = 'none'; document.getElementById('results').style.display = 'none';
+		});
+
+		// Gestione File Presenti
+		const loadFilesBtn = document.getElementById('loadFilesBtn');
+		const existingFilesList = document.getElementById('existingFilesList');
+		const existingFilesMessage = document.getElementById('existingFilesMessage');
+
+		async function loadExistingFiles() {
+			const currentApiKey = sessionApiInput.value.trim();
+			if (!currentApiKey) { existingFilesMessage.textContent = 'Errore: Inserisci la tua API Key in alto'; return; }
+			const globalSelect = document.getElementById('globalBucketSelect');
+			let targetBucket = '';
+			if (globalSelect.style.display === 'block') {
+				targetBucket = globalSelect.value.trim();
+				if (!targetBucket) {
+					existingFilesMessage.textContent = 'Errore: Seleziona un bucket di destinazione in alto a destra';
+					return;
+				}
+			} else {
+				try {
+					const res = await fetch('/api/files/my-buckets', { headers: { 'x-api-key': currentApiKey } });
+					const data = await res.json();
+					if (res.ok && data.buckets && data.buckets.length > 0) targetBucket = data.buckets[0];
+				} catch(e) { }
+			}
+			if (!targetBucket) { existingFilesMessage.textContent = 'Impossibile determinare il bucket. Controlla API Key.'; return; }
+
+			existingFilesMessage.textContent = 'Caricamento in corso...';
+			existingFilesList.innerHTML = '';
+			try {
+				const res = await fetch(`/api/files/list/${encodeURIComponent(targetBucket)}`, { headers: { 'x-api-key': currentApiKey } });
+				const data = await res.json();
+				if (!res.ok) throw new Error(data.error || 'Errore nel caricamento file');
+				if (!data.files || data.files.length === 0) {
+					existingFilesMessage.textContent = 'Nessun file presente in questo bucket.';
+					return;
+				}
+				existingFilesMessage.textContent = '';
+				data.files.forEach(f => {
+					const item = document.createElement('div');
+					item.style = 'display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--white); border: 1px solid var(--line); border-radius: 4px;';
+					item.innerHTML = `<span style="font-family:'DM Mono',monospace; font-size:11px; color:var(--ink); word-break: break-all;"><a href="/api/files/object/${encodeURIComponent(f.Key)}?bucket=${encodeURIComponent(targetBucket)}" target="_blank" style="color:var(--ink); text-decoration:none;">${f.Key}</a></span>
+									<button type="button" class="del-btn" style="background:#e5534b; color:#fff; border:none; padding:4px 8px; border-radius:4px; font-size:11px; cursor:pointer;">Elimina</button>`;
+					item.querySelector('.del-btn').addEventListener('click', async () => {
+						if (!confirm('Sei sicuro di voler eliminare ' + f.Key + '?')) return;
+						try {
+							const delRes = await fetch(`/api/files/object/${encodeURIComponent(targetBucket)}/${encodeURIComponent(f.Key)}`, { method: 'DELETE', headers: { 'x-api-key': currentApiKey } });
+							if (!delRes.ok) throw new Error('Errore durante l\'eliminazione');
+							item.remove();
+						} catch(err) { alert(err.message); }
+					});
+					existingFilesList.appendChild(item);
+				});
+			} catch (err) {
+				existingFilesMessage.textContent = err.message;
+			}
+		}
+		loadFilesBtn.addEventListener('click', loadExistingFiles);
 
 		// Upload video
 		const videoInput = document.getElementById('videoFileInput'); const videoZone = document.getElementById('videoDropZone'); const videoLabel = document.getElementById('videoFileLabel'); const videoSubmit = document.getElementById('videoSubmitButton'); const videoMessage = document.getElementById('videoMessage');
@@ -363,7 +434,7 @@
 				});
 				const results = await Promise.all(promises);
 				videoMessage.textContent = `${results.length} video salvati con successo!`; document.getElementById('resultSizes').textContent = 'Video Originale'; 
-				results.forEach(data => { const tile = document.createElement('article'); tile.className = 'tile'; tile.innerHTML = `<video src="/api/files/object/${encodeURIComponent(data.original)}" style="width:100%; aspect-ratio:1; object-fit:cover; background:#000;" controls></video><p>${data.original.split('/').pop()}</p>`; gallery.appendChild(tile); });
+				results.forEach(data => { const tile = document.createElement('article'); tile.className = 'tile'; tile.innerHTML = `<video src="/api/files/object/${encodeURIComponent(data.original)}?bucket=${encodeURIComponent(data.bucket)}" style="width:100%; aspect-ratio:1; object-fit:cover; background:#000;" controls></video><p>${data.original.split('/').pop()}</p>`; gallery.appendChild(tile); });
 				document.getElementById('results').classList.add('visible');
 			} catch (error) { videoMessage.textContent = error.message; } finally { videoSubmit.disabled = false; videoSubmit.textContent = 'Carica video'; }
 		});
