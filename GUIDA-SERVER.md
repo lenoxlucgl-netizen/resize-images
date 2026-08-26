@@ -125,8 +125,6 @@ CREATE TABLE `token` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 ```
 
-Non è necessario inserire token manualmente, vengono gestiti dall'app.
-
 ---
 
 ## 7. Avvio di MinIO
