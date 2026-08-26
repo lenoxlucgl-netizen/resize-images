@@ -60,8 +60,12 @@ NODE_ENV=development
 
 APP_SECRET=STRINGA_CASUALE
 
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD_HASH=HASH_SHA256
+# Database MySQL
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=resize_image
+DB_USER=root
+DB_PASSWORD=tua_password_mysql
 
 STORAGE_TYPE=minio
 
@@ -92,25 +96,36 @@ APP_SECRET=
 
 ---
 
-## 6. Generare ADMIN_PASSWORD_HASH
+## 6. Configurazione MySQL (Auth e API Keys)
 
-Password di esempio:
+Il sistema utilizza MySQL per salvare le credenziali di amministrazione e le API Key. Assicurati di creare il database e le relative tabelle tramite phpMyAdmin o console MySQL.
 
-text
-Password123!
+### Database
+Nome: `resize_image`
 
+### Tabella `admin`
+```sql
+CREATE TABLE `admin` (
+  `admin_id` int(11) NOT NULL AUTO_INCREMENT,
+  `username` varchar(100) NOT NULL,
+  `password` varchar(100) NOT NULL,
+  PRIMARY KEY (`admin_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+```
 
-Generazione hash:
+Inserire l'utente `admin` con la password in chiaro oppure il suo hash `SHA-256`.
 
-powershell
-node -e "const c=require('crypto'); console.log(c.createHash('sha256').update('Password123!').digest('hex'));"
+### Tabella `token`
+```sql
+CREATE TABLE `token` (
+  `api_keys` text NOT NULL,
+  `name` text NOT NULL,
+  `bucket` text NOT NULL,
+  `createdAT` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+```
 
-
-Copiare il risultato nel parametro:
-
-env
-ADMIN_PASSWORD_HASH=
-
+Non è necessario inserire token manualmente, vengono gestiti dall'app.
 
 ---
 

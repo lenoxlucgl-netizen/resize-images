@@ -810,7 +810,7 @@ La risposta in caso di successo (HTTP 201) contiene la chiave in chiaro **una so
 }
 ```
 
-Il file locale `api-keys.json` conserva gli hash SHA-256 (non le chiavi in chiaro).
+Gli hash SHA-256 (non le chiavi in chiaro) vengono conservati nella tabella `token` del database MySQL, insieme al nome e al bucket autorizzato.
 
 ### 17.2 Upload tramite API
 
@@ -943,4 +943,4 @@ Se il file esiste, il backend restituisce il file in stream con il corretto `Con
 
 ## 18. Sicurezza delle API key e Considerazioni
 
-Il file `api-keys.json` è adatto a un ambiente locale o a un singolo server. Per un ambiente distribuito sarebbe preferibile salvare gli hash in un database con identificativo, revoca, scadenza, permessi e audit. La chiave non deve MAI essere inserita nel codice frontend di un'applicazione pubblica (come una web-app in React/Vue esposta all'utente), perché sarebbe visibile e utilizzabile da chiunque per aggirare l'interfaccia: va conservata unicamente lato server. L'endpoint di generazione `POST /api/auth/api-key` ora impedisce agli attaccanti di creare ulteriori chiavi, blindando efficacemente l'uso del servizio.
+Gli hash delle API Key sono salvati all'interno della tabella `token` di un database MySQL dedicato, superando il limite del singolo file JSON locale precedentemente utilizzato. Questo approccio è idoneo sia per ambienti locali che distribuiti, abilitando una migliore gestione (identificativo, bucket autorizzato e data di creazione). La chiave non deve MAI essere inserita nel codice frontend di un'applicazione pubblica (come una web-app in React/Vue esposta all'utente), perché sarebbe visibile e utilizzabile da chiunque per aggirare l'interfaccia: va conservata unicamente lato server. L'endpoint di generazione `POST /api/auth/api-key` ora impedisce agli attaccanti di creare ulteriori chiavi, blindando efficacemente l'uso del servizio.

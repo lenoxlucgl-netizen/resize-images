@@ -16,9 +16,16 @@ class ApiKeyService {
     const plainKey = `imgf_${crypto.randomBytes(32).toString('hex')}`;
     const hash = this.hash(plainKey);
     
+    // Calcoliamo l'ora locale corretta (ISOString nativamente restituisce l'orario UTC/Greenwich)
+    const now = new Date();
+    const localTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000))
+      .toISOString()
+      .slice(0, 19)
+      .replace('T', ' ');
+    
     await db.query(
-      'INSERT INTO token (api_keys, name, bucket) VALUES (?, ?, ?)',
-      [hash, name, bucket]
+      'INSERT INTO token (api_keys, name, bucket, createdAT) VALUES (?, ?, ?, ?)',
+      [hash, name, bucket, localTime]
     );
     
     return plainKey;
