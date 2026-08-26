@@ -361,8 +361,11 @@
 					const item = document.createElement('div');
 					item.style = 'display: flex; justify-content: space-between; align-items: center; padding: 10px; background: var(--white); border: 1px solid var(--line); border-radius: 4px;';
 					item.innerHTML = `<span style="font-family:'DM Mono',monospace; font-size:11px; color:var(--ink); word-break: break-all;"><a href="/api/files/object/${encodeURIComponent(f.Key)}?bucket=${encodeURIComponent(targetBucket)}" target="_blank" style="color:var(--ink); text-decoration:none;">${f.Key}</a></span>
-									<button type="button" class="del-btn" style="background:#e5534b; color:#fff; border:none; padding:4px 8px; border-radius:4px; font-size:11px; cursor:pointer;">Elimina</button>`;
-					item.querySelector('.del-btn').addEventListener('click', async () => {
+									<button type="button" class="del-btn" style="background:transparent; color:#e5534b; border:1px solid #e5534b; padding:6px 12px; border-radius:6px; font-size:11px; font-weight:600; cursor:pointer; transition:all 0.2s ease;">Elimina</button>`;
+					const delBtn = item.querySelector('.del-btn');
+					delBtn.addEventListener('mouseenter', () => { delBtn.style.background = '#e5534b'; delBtn.style.color = '#fff'; });
+					delBtn.addEventListener('mouseleave', () => { delBtn.style.background = 'transparent'; delBtn.style.color = '#e5534b'; });
+					delBtn.addEventListener('click', async () => {
 						if (!confirm('Sei sicuro di voler eliminare ' + f.Key + '?')) return;
 						try {
 							const delRes = await fetch(`/api/files/object/${encodeURIComponent(targetBucket)}/${encodeURIComponent(f.Key)}`, { method: 'DELETE', headers: { 'x-api-key': currentApiKey } });

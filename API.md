@@ -328,8 +328,7 @@ Tutti i formati di file sono supportati. Il server categorizza automaticamente:
 Nessun limite. Il server e l'interfaccia accettano file di qualsiasi dimensione (peso) e permettono di generare un numero illimitato di varianti.
 
 ### Duplicati
-Se un file con lo stesso nome è già presente nel bucket, il server restituirà un errore `409 Conflict`.
-Per le immagini, il controllo avviene sul file originale (se keepOriginal='only') o sulla prima variante creata.
+Se un file o un'immagine con lo stesso nome è già presente nel bucket (o viene generato con lo stesso nome della variante), questo **verrà automaticamente sovrascritto** senza restituire errori. Questo permette di rimpiazzare vecchie versioni dei file con facilità.
 
 ---
 
@@ -401,14 +400,49 @@ curl.exe -X POST `
 
 ---
 
-## Errore Duplicato
+
+
+# Gestione File (Tramite API Key)
+
+## GET /api/files/list/{bucket}
+
+Restituisce l'elenco dei file presenti in un determinato bucket. L'API Key deve avere accesso a quel bucket o essere globale (`*`).
+
+### Autenticazione
+
+```http
+x-api-key: <TUA_API_KEY>
+```
+
+### Esempio di Risposta
+```json
+{
+  "files": [
+    { "Key": "foto.jpg" },
+    { "Key": "videos/clip.mp4" }
+  ]
+}
+```
+
+---
+
+## DELETE /api/files/object/{bucket}/{chiave}
+
+Elimina fisicamente un file da MinIO.
+
+### Autenticazione
+
+```http
+x-api-key: <TUA_API_KEY>
+```
+
+### Risposta
 
 ```json
 {
-  "error": "Errore: Immagine già presente" 
+  "success": true
 }
 ```
-*(Oppure "Errore: File già presente")*
 
 ---
 
@@ -418,6 +452,9 @@ curl.exe -X POST `
 
 Restituisce un file presente su MinIO.
 
+### Parametri Opzionali
+- `?bucket={nome_bucket}` (Se non fornito, viene usato il bucket predefinito)
+
 ### Autenticazione
 
 Non richiesta.
@@ -425,7 +462,7 @@ Non richiesta.
 ### Esempio
 
 ```text
-http://localhost:3003/api/files/object/thumbs/foto_200x200.jpg
+http://localhost:3003/api/files/object/thumbs/foto_200x200.jpg?bucket=savedimages
 ```
 
 ### Utilizzo HTML
@@ -433,7 +470,12 @@ http://localhost:3003/api/files/object/thumbs/foto_200x200.jpg
 ```html
 <img
   src="http://localhost:3003/api/files/object/thumbs/foto_200x200.jpg"
-  alt="Ante
+  alt="Anteprima">
+```
+
+### Risposta d'Errore
+
+```json
 {
   "error": "File non trovato"
 }

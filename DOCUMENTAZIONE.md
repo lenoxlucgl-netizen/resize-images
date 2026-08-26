@@ -396,14 +396,7 @@ savedimages/
 
 ### Collisioni
 
-Il nome originale non include un UUID. Di conseguenza, due upload con lo stesso nome nella stessa posizione possono sovrascrivere l'oggetto precedente, in base al comportamento di `PutObject` di MinIO/S3.
-
-Questa scelta segue la richiesta di naming leggibile, ma in produzione sarebbe opportuno aggiungere una strategia anti-collisione, per esempio:
-
-- una directory per utente;
-- una directory per upload;
-- una versione numerica;
-- un identificatore nel percorso, lasciando comunque leggibile il nome del file.
+Se un file con lo stesso nome viene caricato, il file precedente verrà **sovrascritto** senza mostrare errori. Questo comportamento (implementato di recente per facilitare caricamenti massivi in sovrascrittura) permette di aggiornare agilmente file vecchi mantenendo le chiavi S3 invariate. In produzione, se l'esigenza cambia, sarebbe opportuno aggiungere una logica anti-collisione.
 
 ---
 
