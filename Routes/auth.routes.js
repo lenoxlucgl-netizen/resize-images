@@ -28,11 +28,13 @@ router.post('/login', async (req, res) => {
 
 router.post('/api-key', adminAuth, async (req, res) => {
   try {
-    const { name, bucket } = req.body;
+    const { name } = req.body;
+    let { bucket } = req.body;
     
-    if (!name || !bucket) {
-      return res.status(400).json({ error: 'Nome e Bucket sono obbligatori' });
+    if (!name) {
+      return res.status(400).json({ error: 'Il Nome è obbligatorio' });
     }
+    bucket = bucket || '*';
 
     const apiKey = await ApiKeyService.createKey(name, bucket);
     res.status(201).json({ apiKey, uploadEndpoint: '/api/files/upload-api' });
