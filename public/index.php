@@ -85,6 +85,7 @@
 	<header>
 		<div class="brand">IMAGE <span>RESIZE</span></div>
 		<div style="display:flex; gap:15px; align-items:center;">
+			<select id="globalBucketSelect" style="display:none; padding:6px 12px; border-radius:6px; font-size:11px; background:transparent; color:var(--white); border:1px solid #48514a; cursor:pointer; max-width:200px;"></select>
 			<div class="status"><i class="dot"></i> minio storage</div>
 			<button id="logoutBtn" style="width:auto; margin:0; padding:6px 12px; background:transparent; border:1px solid #48514a; color:var(--muted); font-size:11px; cursor:pointer; border-radius:6px;">Logout</button>
 		</div>
@@ -173,11 +174,37 @@
 		const form = document.getElementById('uploadForm'); const input = document.getElementById('fileInput'); const zone = document.getElementById('dropZone'); const label = document.getElementById('fileLabel'); const submit = document.getElementById('submitButton'); const message = document.getElementById('message'); const customSizes = document.getElementById('customSizes'); const addSize = document.getElementById('addSize');
 		
 		const sessionApiInput = document.getElementById('sessionApiKey');
+		
+		async function checkApiKeyBuckets(key) {
+			const select = document.getElementById('globalBucketSelect');
+			if (!key) { select.style.display = 'none'; return; }
+			try {
+				const res = await fetch('/api/files/my-buckets', { headers: { 'x-api-key': key } });
+				if (res.ok) {
+					const data = await res.json();
+					if (data.global) {
+						select.innerHTML = '<option value="">-- Seleziona Bucket di Destinazione --</option>';
+						data.buckets.forEach(b => {
+							const opt = document.createElement('option');
+							opt.value = b; opt.textContent = b;
+							select.appendChild(opt);
+						});
+						select.style.display = 'block';
+					} else { select.style.display = 'none'; }
+				} else { select.style.display = 'none'; }
+			} catch(e) { select.style.display = 'none'; }
+		}
+
 		if (sessionStorage.getItem('activeApiKey')) {
 			sessionApiInput.value = sessionStorage.getItem('activeApiKey');
+			checkApiKeyBuckets(sessionApiInput.value);
 		}
+		
+		let bucketCheckTimeout;
 		sessionApiInput.addEventListener('input', (e) => {
 			sessionStorage.setItem('activeApiKey', e.target.value.trim());
+			clearTimeout(bucketCheckTimeout);
+			bucketCheckTimeout = setTimeout(() => checkApiKeyBuckets(e.target.value.trim()), 300);
 		});
 
 		document.getElementById('generateApiKey').addEventListener('click', async () => { const result = document.getElementById('apiResult'); const name = document.getElementById('apiNameInput').value.trim(); const bucket = document.getElementById('apiBucketSelect').value; if (!name) { result.textContent = 'Inserisci nome'; result.classList.add('visible'); return; } result.textContent = 'Generazione...'; result.classList.add('visible'); try { const response = await fetch('/api/auth/api-key', { method:'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ name, bucket }) }); const data = await response.json(); if (!response.ok) throw new Error(data.error); const endpoint = `${location.origin}${data.uploadEndpoint}`; result.innerHTML = `<div class="api-status"><i></i>Chiave attiva</div><span class="api-label">API key (VISIBILE SOLO ORA)</span><div class="api-field" id="apiFieldContainer"><code class="api-value" id="apiKeyValue"></code><button class="api-copy" id="copyApiKey" type="button">Copia</button></div><span class="api-label">Endpoint upload</span><code class="api-value" style="display:block;margin-top:5px">${endpoint}</code><pre class="api-snippet">curl -H "x-api-key: LA_TUA_CHIAVE" \\\n  -F "file=@foto.jpg" \\\n  -F "sizes=800x600" \\\n  ${endpoint}</pre><small class="api-note">Conserva questa chiave in un secret manager. Non inserirla in codice frontend pubblico.</small>`; document.getElementById('apiKeyValue').textContent = data.apiKey; document.getElementById('copyApiKey').addEventListener('click', async () => { await navigator.clipboard?.writeText(data.apiKey); const btn = document.getElementById('copyApiKey'); btn.textContent = 'Copiato!'; btn.style.background = 'var(--acid)'; btn.style.color = 'var(--ink)'; setTimeout(() => { btn.textContent = 'Copia'; btn.style.background = '#48514a'; btn.style.color = 'var(--white)'; }, 2000); }); } catch (error) { result.textContent = error.message; } });
@@ -235,7 +262,8 @@
 					formData.append('keepOriginal', keepOriginal);
 					formData.append('path', document.getElementById('imageUploadPath').value.trim());
 					formData.append('resizedPath', document.getElementById('resizedUploadPath').value.trim());
-					const selectedBucket = document.getElementById('apiBucketSelect').value.trim();
+					const globalSelect = document.getElementById('globalBucketSelect');
+					const selectedBucket = globalSelect.style.display === 'block' ? globalSelect.value.trim() : '';
 					if (selectedBucket) formData.append('bucket', selectedBucket);
 					selectedSizes.forEach(size => formData.append('sizes', size.value));
 					const response = await fetch('/api/files/upload-api', { 
@@ -303,7 +331,8 @@
 				const promises = files.map(async file => {
 					const formData = new FormData(); formData.append('file', file);
 					formData.append('path', document.getElementById('videoUploadPath').value.trim());
-					const selectedBucket = document.getElementById('apiBucketSelect').value.trim();
+					const globalSelect = document.getElementById('globalBucketSelect');
+					const selectedBucket = globalSelect.style.display === 'block' ? globalSelect.value.trim() : '';
 					if (selectedBucket) formData.append('bucket', selectedBucket);
 					const response = await fetch('/api/files/upload-api', { 
 						method:'POST', 
@@ -339,7 +368,8 @@
 				const promises = files.map(async file => {
 					const formData = new FormData(); formData.append('file', file);
 					formData.append('path', document.getElementById('allUploadPath').value.trim());
-					const selectedBucket = document.getElementById('apiBucketSelect').value.trim();
+					const globalSelect = document.getElementById('globalBucketSelect');
+					const selectedBucket = globalSelect.style.display === 'block' ? globalSelect.value.trim() : '';
 					if (selectedBucket) formData.append('bucket', selectedBucket);
 					const response = await fetch('/api/files/upload-api', { 
 						method:'POST', 

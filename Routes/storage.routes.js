@@ -19,6 +19,19 @@ router.get('/buckets', adminAuth, async (req, res) => {
   }
 });
 
+router.get('/my-buckets', apiKey, async (req, res) => {
+  try {
+    if (req.authorizedBucket === '*') {
+      const buckets = await StorageService.listBuckets();
+      return res.json({ buckets, global: true });
+    } else {
+      return res.json({ buckets: [req.authorizedBucket], global: false });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Errore nel recupero dei bucket' });
+  }
+});
+
 router.post('/upload-api', apiKey, upload.single('file'), StorageController.upload);
 
 router.get('/object/*', async (req, res) => {
