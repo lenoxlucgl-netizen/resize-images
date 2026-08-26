@@ -158,6 +158,7 @@ Authorization: Bearer <TOKEN_ADMIN>
   "bucket": "savedimages"
 }
 ```
+*Nota: se `bucket` non viene fornito o impostato su `*`, la chiave generata non avrà limitazioni di bucket.*
 
 ### Risposta 201
 

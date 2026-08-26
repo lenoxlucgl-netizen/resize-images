@@ -771,7 +771,7 @@ Per generare una chiave, devi chiamare il seguente endpoint:
 POST /api/auth/api-key
 ```
 
-**Nota di Sicurezza:** L'endpoint richiede l'autenticazione. Devi fornire un header `Authorization: Bearer <token>`, dove il token è ottenuto dalla rotta `POST /api/auth/login` (che implementa un'autenticazione basata su HMAC). Inoltre occorre fornire nel body il `name` dell'API Key e il `bucket` a cui sarà autorizzata a scrivere. In questo modo le API non possono generare incontrollatamente altre API.
+**Nota di Sicurezza:** L'endpoint richiede l'autenticazione. Devi fornire un header `Authorization: Bearer <token>`, dove il token è ottenuto dalla rotta `POST /api/auth/login` (che implementa un'autenticazione basata su HMAC). Inoltre occorre fornire nel body il `name` dell'API Key e opzionalmente il `bucket` a cui sarà autorizzata a scrivere. Se il bucket viene omesso, l'API Key generata non avrà limitazioni di bucket. In questo modo le API non possono generare incontrollatamente altre API.
 
 La risposta in caso di successo (HTTP 201) contiene la chiave in chiaro **una sola volta**:
 

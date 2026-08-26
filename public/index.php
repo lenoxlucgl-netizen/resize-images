@@ -180,16 +180,16 @@
 			sessionStorage.setItem('activeApiKey', e.target.value.trim());
 		});
 
-		document.getElementById('generateApiKey').addEventListener('click', async () => { const result = document.getElementById('apiResult'); const name = document.getElementById('apiNameInput').value; const bucket = document.getElementById('apiBucketSelect').value; if (!name || !bucket) { result.textContent = 'Inserisci nome e seleziona un bucket'; result.classList.add('visible'); return; } result.textContent = 'Generazione...'; result.classList.add('visible'); try { const response = await fetch('/api/auth/api-key', { method:'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ name, bucket }) }); const data = await response.json(); if (!response.ok) throw new Error(data.error); const endpoint = `${location.origin}${data.uploadEndpoint}`; result.innerHTML = `<div class="api-status"><i></i>Chiave attiva</div><span class="api-label">API key (VISIBILE SOLO ORA)</span><div class="api-field" id="apiFieldContainer"><code class="api-value" id="apiKeyValue"></code><button class="api-copy" id="copyApiKey" type="button">Copia</button></div><span class="api-label">Endpoint upload</span><code class="api-value" style="display:block;margin-top:5px">${endpoint}</code><pre class="api-snippet">curl -H "x-api-key: LA_TUA_CHIAVE" \\\n  -F "file=@foto.jpg" \\\n  -F "sizes=800x600" \\\n  ${endpoint}</pre><small class="api-note">Conserva questa chiave in un secret manager. Non inserirla in codice frontend pubblico.</small>`; document.getElementById('apiKeyValue').textContent = data.apiKey; document.getElementById('copyApiKey').addEventListener('click', async () => { await navigator.clipboard?.writeText(data.apiKey); const btn = document.getElementById('copyApiKey'); btn.textContent = 'Copiato!'; btn.style.background = 'var(--acid)'; btn.style.color = 'var(--ink)'; setTimeout(() => { btn.textContent = 'Copia'; btn.style.background = '#48514a'; btn.style.color = 'var(--white)'; }, 2000); }); } catch (error) { result.textContent = error.message; } });
+		document.getElementById('generateApiKey').addEventListener('click', async () => { const result = document.getElementById('apiResult'); const name = document.getElementById('apiNameInput').value.trim(); const bucket = document.getElementById('apiBucketSelect').value; if (!name) { result.textContent = 'Inserisci nome'; result.classList.add('visible'); return; } result.textContent = 'Generazione...'; result.classList.add('visible'); try { const response = await fetch('/api/auth/api-key', { method:'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ name, bucket }) }); const data = await response.json(); if (!response.ok) throw new Error(data.error); const endpoint = `${location.origin}${data.uploadEndpoint}`; result.innerHTML = `<div class="api-status"><i></i>Chiave attiva</div><span class="api-label">API key (VISIBILE SOLO ORA)</span><div class="api-field" id="apiFieldContainer"><code class="api-value" id="apiKeyValue"></code><button class="api-copy" id="copyApiKey" type="button">Copia</button></div><span class="api-label">Endpoint upload</span><code class="api-value" style="display:block;margin-top:5px">${endpoint}</code><pre class="api-snippet">curl -H "x-api-key: LA_TUA_CHIAVE" \\\n  -F "file=@foto.jpg" \\\n  -F "sizes=800x600" \\\n  ${endpoint}</pre><small class="api-note">Conserva questa chiave in un secret manager. Non inserirla in codice frontend pubblico.</small>`; document.getElementById('apiKeyValue').textContent = data.apiKey; document.getElementById('copyApiKey').addEventListener('click', async () => { await navigator.clipboard?.writeText(data.apiKey); const btn = document.getElementById('copyApiKey'); btn.textContent = 'Copiato!'; btn.style.background = 'var(--acid)'; btn.style.color = 'var(--ink)'; setTimeout(() => { btn.textContent = 'Copia'; btn.style.background = '#48514a'; btn.style.color = 'var(--white)'; }, 2000); }); } catch (error) { result.textContent = error.message; } });
 		
 		// Fetch buckets on load
 		async function loadBuckets() {
 			try {
 				const res = await fetch('/api/files/buckets', { headers: { 'Authorization': `Bearer ${token}` } });
-				if (res.ok) {
-					const data = await res.json();
-					const select = document.getElementById('apiBucketSelect');
-					select.innerHTML = '<option value="">-- Seleziona Bucket --</option>';
+				const data = await res.json();
+				const select = document.getElementById('apiBucketSelect');
+				select.innerHTML = '<option value="">-- Nessun limite (Tutti i bucket) --</option>';
+				if(res.ok && data.buckets) {
 					data.buckets.forEach(b => {
 						const opt = document.createElement('option');
 						opt.value = b; opt.textContent = b;
@@ -380,7 +380,7 @@
 					var date = new Date(k.createdAt).toLocaleDateString('it-IT', { day:'2-digit', month:'short', year:'numeric' });
 					item.innerHTML = '<div class="key-info">'
 						+ '<p class="key-name">' + (k.name || '—') + '</p>'
-						+ '<span class="key-meta">Bucket: ' + k.bucket + ' · ' + date + '</span>'
+						+ '<span class="key-meta">Bucket: ' + (k.bucket === '*' ? 'Tutti i bucket' : k.bucket) + ' · ' + date + '</span>'
 						+ '<span class="key-meta" title="' + k.hash + '">Hash: ' + k.hash.slice(0,16) + '…</span>'
 						+ '</div>'
 						+ '<button class="key-delete" data-hash="' + k.hash + '" type="button">Elimina</button>';
