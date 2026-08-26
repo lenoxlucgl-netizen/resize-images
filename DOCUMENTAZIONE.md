@@ -184,8 +184,8 @@ Offre tre tab principali: **Tutti i file**, **Foto** e **Video**.
 - opzione per specificare il *Percorso di salvataggio* nel bucket;
 - i video vengono caricati nel loro formato originale (non vengono ridimensionati).
 
-**Gestione API e Autenticazione**:
-Nella UI è presente un campo "Sessione" in cui incollare una API Key valida per poter effettuare upload. È inoltre possibile generare nuove API Key (selezionando il Bucket desiderato) se autenticati come amministratori.
+**Gestione API**:
+Nella UI è presente un campo "Sessione" in cui incollare una API Key valida per poter effettuare upload. È inoltre possibile generare nuove API Key e gestire quelle esistenti. L'API Key generata non ha limitazioni di default.
 
 I tre preset delle immagini possono essere selezionati tramite checkbox. Il pulsante `+ Aggiungi dimensione personalizzata` crea un campo nel formato:
 
@@ -519,11 +519,7 @@ Non richiede autenticazione.
 
 ### Autenticazione
 
-```text
-POST /api/auth/login
-```
-
-Restituisce un token HMAC generato usando la chiave `APP_SECRET` per autenticare l'utente amministratore, previa validazione delle credenziali. JWT non viene più utilizzato, essendo stato sostituito da questo meccanismo custom e dalle API key.
+Il sistema utilizza esclusivamente API Key (header `x-api-key` o `Authorization: Bearer`). Il sistema di login per gli admin è stato rimosso. Le API Key vengono salvate nel database MySQL con hash SHA-256.
 
 ### Bucket
 
@@ -541,13 +537,11 @@ GET  /api/resize/jobs/:fileId
 POST /api/resize/trigger/:fileId
 ```
 
-### Amministrazione
-
 ```text
 GET /api/admin/stats
 ```
 
-Richiede autenticazione e ruolo `admin`.
+*(Deprecato, richiedeva autenticazione admin pregressa).*
 
 ---
 
@@ -771,7 +765,7 @@ Per generare una chiave, devi chiamare il seguente endpoint:
 POST /api/auth/api-key
 ```
 
-**Nota di Sicurezza:** L'endpoint richiede l'autenticazione. Devi fornire un header `Authorization: Bearer <token>`, dove il token è ottenuto dalla rotta `POST /api/auth/login` (che implementa un'autenticazione basata su HMAC). Inoltre occorre fornire nel body il `name` dell'API Key e il `bucket` a cui sarà autorizzata a scrivere. In questo modo le API non possono generare incontrollatamente altre API.
+**Nota di Sicurezza:** L'endpoint consente la generazione libera di API Key. Non ha più limitazioni di autenticazione per l'interfaccia. Nel body devi fornire il `name` dell'API Key e opzionalmente un `bucket`. Se ometti il bucket, la chiave non avrà restrizioni e potrà scrivere su qualsiasi bucket.
 
 La risposta in caso di successo (HTTP 201) contiene la chiave in chiaro **una sola volta**:
 

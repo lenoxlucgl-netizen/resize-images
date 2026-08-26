@@ -20,35 +20,7 @@ https://tuodominio.it
 
 # Autenticazione
 
-Il sistema utilizza due modalità di autenticazione.
-
-## 1. Token Admin
-
-Utilizzato esclusivamente per:
-
-- Login amministratore
-- Creazione API Key
-- Eliminazione API Key
-- Visualizzazione API Key
-- Lettura bucket MinIO
-
-Header richiesto:
-
-```http
-Authorization: Bearer <TOKEN_ADMIN>
-```
-
-Il token viene ottenuto tramite:
-
-```http
-POST /api/auth/login
-```
-
----
-
-## 2. API Key
-
-Utilizzata per il caricamento dei file.
+Il sistema utilizza le **API Key** per autenticare l'accesso.
 
 Può essere inviata in uno dei due modi:
 
@@ -91,64 +63,12 @@ curl http://localhost:3003/health
 
 ---
 
-# Login Admin
-
-## POST /api/auth/login
-
-Effettua l'accesso come amministratore e restituisce il token di autenticazione.
-
-### Header
-
-```http
-Content-Type: application/json
-```
-
-### Body
-
-```json
-{
-  "username": "admin",
-  "password": "LA_TUA_PASSWORD"
-}
-```
-
-### Risposta 200
-
-```json
-{
-  "token": "a3f8c1..."
-}
-```
-
-### Risposta 401
-
-```json
-{
-  "error": "Credenziali non valide"
-}
-```
-
-### Esempio PowerShell
-
-```powershell
-curl.exe -X POST http://localhost:3003/api/auth/login `
-  -H "Content-Type: application/json" `
-  -d "{\"username\":\"admin\",\"password\":\"LA_TUA_PASSWORD\"}"
-```
-
----
 
 # API Keys
 
 ## POST /api/auth/api-key
 
 Genera una nuova API Key.
-
-### Autenticazione
-
-```http
-Authorization: Bearer <TOKEN_ADMIN>
-```
 
 ### Body
 
@@ -158,6 +78,7 @@ Authorization: Bearer <TOKEN_ADMIN>
   "bucket": "savedimages"
 }
 ```
+*Nota: se `bucket` non viene fornito, la chiave generata non avrà limitazioni di bucket e sarà valida per tutti i bucket.*
 
 ### Risposta 201
 
@@ -174,7 +95,6 @@ Authorization: Bearer <TOKEN_ADMIN>
 
 ```powershell
 curl.exe -X POST http://localhost:3003/api/auth/api-key `
-  -H "Authorization: Bearer TOKEN_ADMIN" `
   -H "Content-Type: application/json" `
   -d "{\"name\":\"Progetto X\",\"bucket\":\"savedimages\"}"
 ```
@@ -185,17 +105,10 @@ curl.exe -X POST http://localhost:3003/api/auth/api-key `
 
 Restituisce tutte le API Key registrate.
 
-### Autenticazione
-
-```http
-Authorization: Bearer <TOKEN_ADMIN>
-```
-
 ### Esempio
 
 ```powershell
-curl.exe http://localhost:3003/api/auth/api-keys `
-  -H "Authorization: Bearer TOKEN_ADMIN"
+curl.exe http://localhost:3003/api/auth/api-keys
 ```
 
 ### Risposta
@@ -219,17 +132,10 @@ curl.exe http://localhost:3003/api/auth/api-keys `
 
 Elimina una API Key.
 
-### Autenticazione
-
-```http
-Authorization: Bearer <TOKEN_ADMIN>
-```
-
 ### Esempio
 
 ```powershell
-curl.exe -X DELETE http://localhost:3003/api/auth/api-key/a3f8c1... `
-  -H "Authorization: Bearer TOKEN_ADMIN"
+curl.exe -X DELETE http://localhost:3003/api/auth/api-key/a3f8c1...
 ```
 
 ### Risposta
@@ -248,17 +154,10 @@ curl.exe -X DELETE http://localhost:3003/api/auth/api-key/a3f8c1... `
 
 Restituisce la lista dei bucket disponibili.
 
-### Autenticazione
-
-```http
-Authorization: Bearer <TOKEN_ADMIN>
-```
-
 ### Esempio
 
 ```powershell
-curl.exe http://localhost:3003/api/files/buckets `
-  -H "Authorization: Bearer TOKEN_ADMIN"
+curl.exe http://localhost:3003/api/files/buckets
 ```
 
 ### Risposta

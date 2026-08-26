@@ -2,37 +2,18 @@ const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 const ApiKeyService = require('../services/ApiKeyService');
-const adminAuth = require('../middlewares/adminAuth');
 const db = require('../config/db');
 
-router.post('/login', async (req, res) => {
-  const { username, password } = req.body;
-  
-  const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
-  
+router.post('/api-key', async (req, res) => {
   try {
-    const [rows] = await db.query('SELECT password FROM admin WHERE username = ?', [username]);
+    const { name } = req.body;
+    let { bucket } = req.body;
     
-    // Supportiamo solo la password hashata in SHA-256.
-    if (rows.length > 0 && rows[0].password === passwordHash) {
-      const token = crypto.createHmac('sha256', process.env.APP_SECRET || 'fallback_secret').update(username).digest('hex');
-      return res.json({ token });
+    if (!name) {
+      return res.status(400).json({ error: 'Nome API obbligatorio' });
     }
     
-    res.status(401).json({ error: 'Credenziali non valide' });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Errore interno del server' });
-  }
-});
-
-router.post('/api-key', adminAuth, async (req, res) => {
-  try {
-    const { name, bucket } = req.body;
-    
-    if (!name || !bucket) {
-      return res.status(400).json({ error: 'Nome e Bucket sono obbligatori' });
-    }
+    bucket = bucket || '*'; // * = nessun limite
 
     const apiKey = await ApiKeyService.createKey(name, bucket);
     res.status(201).json({ apiKey, uploadEndpoint: '/api/files/upload-api' });
@@ -42,10 +23,9 @@ router.post('/api-key', adminAuth, async (req, res) => {
   }
 });
 
-router.get('/api-keys', adminAuth, async (req, res) => {
+router.get('/api-keys', async (req, res) => {
   try {
     const keys = await ApiKeyService.readKeys();
-    // Restituisce i metadati senza esporre le chiavi in chiaro (o in questo caso restituisce record dal db che contengono l'hash e altri metadati)
     res.json({ keys });
   } catch (error) {
     console.error(error);
@@ -53,7 +33,7 @@ router.get('/api-keys', adminAuth, async (req, res) => {
   }
 });
 
-router.delete('/api-key/:hash', adminAuth, async (req, res) => {
+router.delete('/api-key/:hash', async (req, res) => {
   try {
     const { hash } = req.params;
     const deleted = await ApiKeyService.deleteKey(hash);

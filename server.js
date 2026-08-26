@@ -16,10 +16,6 @@ app.use(cors());
 app.use(express.json());
 app.use('/saved-images', express.static(path.join(__dirname, 'saved-images')));
 app.get('/', (req, res) => {
-  res.type('html').sendFile(path.join(__dirname, 'public', 'Login.php'));
-});
-
-app.get('/dashboard', (req, res) => {
   res.type('html').sendFile(path.join(__dirname, 'public', 'index.php'));
 });
 
