@@ -96,12 +96,24 @@ APP_SECRET=
 
 ---
 
-## 6. Configurazione MySQL (API Keys)
+## 6. Configurazione MySQL (Auth e API Keys)
 
-Il sistema utilizza MySQL per salvare le API Key. Assicurati di creare il database e la relativa tabella tramite phpMyAdmin o console MySQL.
+Il sistema utilizza MySQL per salvare le credenziali di amministrazione e le API Key. Assicurati di creare il database e le relative tabelle tramite phpMyAdmin o console MySQL.
 
 ### Database
 Nome: `resize_image`
+
+### Tabella `admin`
+```sql
+CREATE TABLE `admin` (
+  `admin_id` int(11) NOT NULL AUTO_INCREMENT,
+  `username` varchar(100) NOT NULL,
+  `password` varchar(100) NOT NULL,
+  PRIMARY KEY (`admin_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+```
+
+Inserire l'utente `admin` assicurandosi che la password sia salvata **esclusivamente** come hash `SHA-256`. Non inserire password in chiaro, in quanto il sistema le rifiuterà automaticamente.
 
 ### Tabella `token`
 ```sql

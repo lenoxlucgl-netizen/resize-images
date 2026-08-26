@@ -7,11 +7,10 @@ class StorageController {
       if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
       // Il bucket di destinazione è quello richiesto, altrimenti quello dell'API key, altrimenti default
-      const defaultAuthBucket = req.authorizedBucket === '*' ? null : req.authorizedBucket;
-      const targetBucket = (req.body.bucket && req.body.bucket.trim()) ? req.body.bucket.trim() : (defaultAuthBucket || process.env.MINIO_BUCKET || 'savedimages');
+      const targetBucket = (req.body.bucket && req.body.bucket.trim()) ? req.body.bucket.trim() : (req.authorizedBucket || process.env.MINIO_BUCKET || 'savedimages');
 
       // Se l'API key è limitata a un bucket, deve coincidere con il bucket di destinazione
-      if (req.authorizedBucket && req.authorizedBucket !== '*' && req.authorizedBucket !== targetBucket) {
+      if (req.authorizedBucket && req.authorizedBucket !== targetBucket) {
         return res.status(403).json({ error: 'Questa API non possiede i permessi per scrivere in questo Bucket' });
       }
 
