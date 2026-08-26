@@ -85,7 +85,6 @@
 	<header>
 		<div class="brand">IMAGE <span>RESIZE</span></div>
 		<div style="display:flex; gap:15px; align-items:center;">
-			<select id="globalBucketSelect" style="display:none; padding:6px 12px; border-radius:6px; font-size:11px; background:transparent; color:var(--white); border:1px solid #48514a; cursor:pointer; max-width:200px;"></select>
 			<div class="status"><i class="dot"></i> minio storage</div>
 			<button id="logoutBtn" style="width:auto; margin:0; padding:6px 12px; background:transparent; border:1px solid #48514a; color:var(--muted); font-size:11px; cursor:pointer; border-radius:6px;">Logout</button>
 		</div>
@@ -109,6 +108,7 @@
 		<div class="api-key-session" style="margin-bottom: 12px; background: var(--ink); padding: 12px 20px; color: var(--white); display: flex; gap: 15px; align-items: center; border: 1px solid var(--line); flex-wrap: wrap;">
 			<span class="eyebrow" style="margin:0; min-width: 60px;">Sessione</span>
 			<input type="text" id="sessionApiKey" placeholder="Inserisci la tua API Key" style="flex: 1; min-width: 200px; padding: 8px; border: 1px solid #48514a; background: #29332c; color: var(--white); font: 11px 'DM Mono',monospace;" required>
+			<select id="globalBucketSelect" style="display:none; padding:8px; border-radius:4px; font-size:11px; background:#29332c; color:var(--white); border:1px solid #48514a; cursor:pointer; min-width:200px; font-family:'DM Mono',monospace;"></select>
 		</div>
 
 		<form id="uploadForm" class="workspace" style="display: none;">
@@ -250,6 +250,17 @@
 			e.preventDefault(); 
 			const currentApiKey = sessionApiInput.value.trim();
 			if (!currentApiKey) { message.textContent = 'Errore: Inserisci la tua API Key in alto'; return; }
+			
+			const globalSelect = document.getElementById('globalBucketSelect');
+			let finalBucket = '';
+			if (globalSelect.style.display === 'block') {
+				finalBucket = globalSelect.value.trim();
+				if (!finalBucket) {
+					message.textContent = 'Errore: Seleziona un bucket di destinazione in alto a destra';
+					return;
+				}
+			}
+
 			const selectedSizes = [...form.querySelectorAll('input[name="sizes"]')].filter(size => size.type === 'checkbox' ? size.checked : size.value.trim()); 
 			const keepOriginal = form.querySelector('input[name="keepOriginal"]:checked').value;
 			if (keepOriginal !== 'only' && !selectedSizes.length) { message.textContent = 'Seleziona almeno una dimensione'; return; } 
@@ -262,9 +273,7 @@
 					formData.append('keepOriginal', keepOriginal);
 					formData.append('path', document.getElementById('imageUploadPath').value.trim());
 					formData.append('resizedPath', document.getElementById('resizedUploadPath').value.trim());
-					const globalSelect = document.getElementById('globalBucketSelect');
-					const selectedBucket = globalSelect.style.display === 'block' ? globalSelect.value.trim() : '';
-					if (selectedBucket) formData.append('bucket', selectedBucket);
+					if (finalBucket) formData.append('bucket', finalBucket);
 					selectedSizes.forEach(size => formData.append('sizes', size.value));
 					const response = await fetch('/api/files/upload-api', { 
 						method:'POST', 
@@ -324,6 +333,17 @@
 			e.preventDefault(); 
 			const currentApiKey = sessionApiInput.value.trim();
 			if (!currentApiKey) { videoMessage.textContent = 'Errore: Inserisci la tua API Key in alto'; return; }
+
+			const globalSelect = document.getElementById('globalBucketSelect');
+			let finalBucket = '';
+			if (globalSelect.style.display === 'block') {
+				finalBucket = globalSelect.value.trim();
+				if (!finalBucket) {
+					videoMessage.textContent = 'Errore: Seleziona un bucket di destinazione in alto a destra';
+					return;
+				}
+			}
+
 			videoSubmit.disabled = true; videoSubmit.textContent = 'Caricamento in corso...'; videoMessage.textContent = 'Invio a MinIO in corso...';
 			document.getElementById('results').classList.remove('visible'); const gallery = document.getElementById('gallery'); gallery.innerHTML = '';
 			try {
@@ -331,9 +351,7 @@
 				const promises = files.map(async file => {
 					const formData = new FormData(); formData.append('file', file);
 					formData.append('path', document.getElementById('videoUploadPath').value.trim());
-					const globalSelect = document.getElementById('globalBucketSelect');
-					const selectedBucket = globalSelect.style.display === 'block' ? globalSelect.value.trim() : '';
-					if (selectedBucket) formData.append('bucket', selectedBucket);
+					if (finalBucket) formData.append('bucket', finalBucket);
 					const response = await fetch('/api/files/upload-api', { 
 						method:'POST', 
 						headers: { 'x-api-key': currentApiKey },
@@ -361,6 +379,17 @@
 			e.preventDefault(); 
 			const currentApiKey = sessionApiInput.value.trim();
 			if (!currentApiKey) { allMessage.textContent = 'Errore: Inserisci la tua API Key in alto'; return; }
+
+			const globalSelect = document.getElementById('globalBucketSelect');
+			let finalBucket = '';
+			if (globalSelect.style.display === 'block') {
+				finalBucket = globalSelect.value.trim();
+				if (!finalBucket) {
+					allMessage.textContent = 'Errore: Seleziona un bucket di destinazione in alto a destra';
+					return;
+				}
+			}
+
 			allSubmit.disabled = true; allSubmit.textContent = 'Caricamento in corso...'; allMessage.textContent = 'Invio a MinIO in corso...';
 			document.getElementById('results').classList.remove('visible'); const gallery = document.getElementById('gallery'); gallery.innerHTML = '';
 			try {
@@ -368,9 +397,7 @@
 				const promises = files.map(async file => {
 					const formData = new FormData(); formData.append('file', file);
 					formData.append('path', document.getElementById('allUploadPath').value.trim());
-					const globalSelect = document.getElementById('globalBucketSelect');
-					const selectedBucket = globalSelect.style.display === 'block' ? globalSelect.value.trim() : '';
-					if (selectedBucket) formData.append('bucket', selectedBucket);
+					if (finalBucket) formData.append('bucket', finalBucket);
 					const response = await fetch('/api/files/upload-api', { 
 						method:'POST', 
 						headers: { 'x-api-key': currentApiKey },
