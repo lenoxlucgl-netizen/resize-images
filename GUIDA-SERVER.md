@@ -1,9 +1,3 @@
-# Guida all'esecuzione su server
-
-Questa guida descrive come installare e avviare il progetto **Image Resize** su un server Linux (Ubuntu/Debian) in un ambiente di produzione o staging.
-
----
-
 ## Prerequisiti
 
 | Requisito | Versione minima | Note |

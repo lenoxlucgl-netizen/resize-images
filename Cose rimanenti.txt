@@ -1,5 +1,0 @@
-Fare altri file di documentazione Uno dove spiego come eseguirlo sul server
-
-e l'altro e come usare l'API solo per le API.
-
-E fare in modo che esa un pulsante sotto genera API (Gestisci API) che mi fa visualizzare le API e mi da la possibilià di eliminarle
