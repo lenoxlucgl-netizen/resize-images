@@ -277,7 +277,7 @@ curl.exe http://localhost:3003/api/files/buckets `
 
 ## POST /api/files/upload-api
 
-Carica immagini o video su MinIO.
+Carica immagini, video o qualsiasi altro tipo di file su MinIO.
 
 ### Autenticazione
 
@@ -304,59 +304,31 @@ multipart/form-data
 | Campo | Obbligatorio | Descrizione |
 |----------|----------|----------|
 | file | Sì | File da caricare |
-| sizes | Sì per immagini | Dimensioni generate |
-| keepOriginal | No | Conserva originale |
+| sizes | Sì per immagini (se keepOriginal != 'only') | Dimensioni generate |
+| keepOriginal | No | Conserva originale (valori ammessi: 'true', 'false', 'only') |
 | path | No | Percorso originale |
 | resizedPath | No | Percorso varianti |
-| bucket | No | Bucket destinazione |
+| bucket | No | Bucket destinazione (default: bucket della API Key) |
 
 ---
 
-## Formati immagini supportati
+## Formati supportati
 
-```text
-image/jpeg
-image/png
-image/webp
-image/gif
-image/avif
-image/tiff
-```
-
----
-
-## Formati video supportati
-
-```text
-video/mp4
-video/webm
-video/quicktime
-video/x-msvideo
-```
+Tutti i formati di file sono supportati. Il server categorizza automaticamente:
+- **Immagini** (vengono ridimensionate se specificato)
+- **Video** (salvati nella cartella `videos/` o nel percorso personalizzato)
+- **Tutti gli altri file** (salvati nella cartella `files/` o nel percorso personalizzato)
 
 ---
 
 ## Limiti
 
-### Immagini
+### Dimensioni e Peso
+Nessun limite. Il server e l'interfaccia accettano file di qualsiasi dimensione (peso) e permettono di generare un numero illimitato di varianti.
 
-```text
-15 MB lato interfaccia
-100 MB lato server
-```
-
-### Video
-
-```text
-100 MB
-```
-
-### Resize
-
-```text
-Massimo 5 dimensioni
-Massimo 2 personalizzate
-```
+### Duplicati
+Se un file con lo stesso nome è già presente nel bucket, il server restituirà un errore `409 Conflict`.
+Per le immagini, il controllo avviene sul file originale (se keepOriginal='only') o sulla prima variante creata.
 
 ---
 
@@ -425,6 +397,17 @@ curl.exe -X POST `
   "error": "API key non valida"
 }
 ```
+
+---
+
+## Errore Duplicato
+
+```json
+{
+  "error": "Errore: Immagine già presente" 
+}
+```
+*(Oppure "Errore: File già presente")*
 
 ---
 

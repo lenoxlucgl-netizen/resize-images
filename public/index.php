@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="it">
 <head>
 	<meta charset="utf-8">
@@ -101,7 +101,8 @@
 	<main>
 		<section class="intro"><h1>Ridimensiona.<br><em>Conserva.</em></h1><p>Carica un'immagine e crea automaticamente versioni ottimizzate, mantenendo le proporzioni originali.</p></section>
 		<div class="tabs">
-			<button type="button" class="tab active" id="tabFoto">Foto</button>
+			<button type="button" class="tab active" id="tabTutti">Tutti i file</button>
+			<button type="button" class="tab" id="tabFoto">Foto</button>
 			<button type="button" class="tab" id="tabVideo">Video</button>
 		</div>
 		<div class="api-key-session" style="margin-bottom: 12px; background: var(--ink); padding: 12px 20px; color: var(--white); display: flex; gap: 15px; align-items: center; border: 1px solid var(--line); flex-wrap: wrap;">
@@ -109,29 +110,30 @@
 			<input type="text" id="sessionApiKey" placeholder="Inserisci la tua API Key" style="flex: 1; min-width: 200px; padding: 8px; border: 1px solid #48514a; background: #29332c; color: var(--white); font: 11px 'DM Mono',monospace;" required>
 		</div>
 
-		<form id="uploadForm" class="workspace">
-			<label class="drop" id="dropZone" for="fileInput"><input id="fileInput" name="file" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif,image/tiff" multiple required><span class="cross">+</span><strong id="fileLabel">Trascina qui le immagini</strong><small>oppure fai clic per sceglierle · max 15 MB</small></label>
+		<form id="uploadForm" class="workspace" style="display: none;">
+			<label class="drop" id="dropZone" for="fileInput"><input id="fileInput" name="file" type="file" multiple required><span class="cross">+</span><strong id="fileLabel">Trascina qui le immagini</strong><small>oppure fai clic per sceglierle</small></label>
             <section class="panel"><div class="eyebrow">01 / Destinazione</div><h2>Cosa vuoi conservare?</h2>
 				<label class="choice"><input type="radio" name="keepOriginal" value="false" checked><b>Solo modificate</b><span>L'originale non viene conservato.</span></label>
 				<label class="choice"><input type="radio" name="keepOriginal" value="true"><b>Modificate + originale</b><span>Conserva anche il file originale.</span></label>
+				<label class="choice"><input type="radio" name="keepOriginal" value="only"><b>Solo originale</b><span>Conserva solo l'originale, niente varianti.</span></label>
 				<div class="eyebrow" style="margin-top:16px">02 / Percorso Originale (Opzionale)</div>
 				<input type="text" id="imageUploadPath" name="uploadPath" placeholder="es. cartella/sottocartella" style="width:100%; margin-top:6px; padding:6px; border:1px solid #48514a; background:#29332c; color:var(--white); font:11px 'DM Mono',monospace;">
 				<div class="eyebrow" style="margin-top:16px">03 / Percorso Modificate (Opzionale)</div>
 				<input type="text" id="resizedUploadPath" name="resizedPath" placeholder="Lascia vuoto per usare lo stesso percorso dell'originale" style="width:100%; margin-top:6px; padding:6px; border:1px solid #48514a; background:#29332c; color:var(--white); font:11px 'DM Mono',monospace;">
 				<div class="eyebrow" style="margin-top:16px">04 / Dimensioni output</div>
 				<div class="sizes"><label class="size"><input type="checkbox" name="sizes" value="200x200" checked>200 × 200</label><label class="size"><input type="checkbox" name="sizes" value="400x400" checked>400 × 400</label><label class="size"><input type="checkbox" name="sizes" value="680x680" checked>680 × 680</label></div>
-				<div id="customSizes" class="custom-sizes"></div><button id="addSize" class="add-size" type="button">+ Aggiungi dimensione personalizzata (max 2)</button>
+				<div id="customSizes" class="custom-sizes"></div><button id="addSize" class="add-size" type="button">+ Aggiungi dimensione personalizzata</button>
 				<button id="submitButton" type="submit" disabled>Seleziona un'immagine</button><div id="message" role="status"></div>
 				<div class="api-box"><div class="eyebrow">05 / API integrabile</div><span style="display:block;margin-top:4px;color:#adb6aa;font-size:10px;line-height:1.4">Genera una chiave per usare il ridimensionamento da un'altra applicazione. Verrà associata al bucket selezionato.</span>
-				<input type="text" id="apiNameInput" placeholder="Nome API (es. Progetto X)" style="width:100%; margin-top:10px; padding:6px; border:1px solid #48514a; background:#29332c; color:var(--white); font:11px 'DM Mono',monospace;" required>
-				<select id="apiBucketSelect" style="width:100%; margin-top:6px; padding:6px; border:1px solid #48514a; background:#29332c; color:var(--white); font:11px 'DM Mono',monospace;" required><option value="">Caricamento bucket...</option></select>
+				<input type="text" id="apiNameInput" placeholder="Nome API (es. Progetto X)" style="width:100%; margin-top:10px; padding:6px; border:1px solid #48514a; background:#29332c; color:var(--white); font:11px 'DM Mono',monospace;">
+				<select id="apiBucketSelect" style="width:100%; margin-top:6px; padding:6px; border:1px solid #48514a; background:#29332c; color:var(--white); font:11px 'DM Mono',monospace;"><option value="">Caricamento bucket...</option></select>
 				<button id="generateApiKey" type="button">Genera API key</button>
 				<button id="manageApiKeys" type="button" style="background:#48514a; color:var(--white); margin-top:4px;">Gestisci API</button>
 				<div id="apiResult" class="api-result" role="status"></div></div>
 			</section>
 		</form>
 		<form id="videoForm" class="workspace" style="display: none;">
-			<label class="drop" id="videoDropZone" for="videoFileInput"><input id="videoFileInput" name="file" type="file" accept="video/mp4,video/webm,video/quicktime,video/x-msvideo" multiple required><span class="cross">+</span><strong id="videoFileLabel">Trascina qui i video</strong><small>oppure fai clic per sceglierli · max 100 MB</small></label>
+			<label class="drop" id="videoDropZone" for="videoFileInput"><input id="videoFileInput" name="file" type="file" multiple required><span class="cross">+</span><strong id="videoFileLabel">Trascina qui i video</strong><small>oppure fai clic per sceglierli</small></label>
 			<section class="panel">
 				<div class="eyebrow">01 / Storage</div><h2>Salvataggio Video</h2>
 				<p style="color:var(--muted); line-height:1.5; margin-bottom: 20px;">I video verranno salvati su MinIO nel loro formato originale (senza ridimensionamento).</p>
@@ -139,6 +141,17 @@
 				<input type="text" id="videoUploadPath" name="uploadPath" placeholder="es. cartella/video" style="width:100%; margin-top:6px; margin-bottom: 20px; padding:6px; border:1px solid #48514a; background:#29332c; color:var(--white); font:11px 'DM Mono',monospace;">
 				<button id="videoSubmitButton" type="submit" disabled>Seleziona un video</button>
 				<div id="videoMessage" role="status"></div>
+			</section>
+		</form>
+		<form id="allForm" class="workspace">
+			<label class="drop" id="allDropZone" for="allFileInput"><input id="allFileInput" name="file" type="file" multiple required><span class="cross">+</span><strong id="allFileLabel">Trascina qui qualsiasi file</strong><small>oppure fai clic per sceglierli (nessun limite)</small></label>
+			<section class="panel">
+				<div class="eyebrow">01 / Storage</div><h2>Salvataggio File (Senza Limiti)</h2>
+				<p style="color:var(--muted); line-height:1.5; margin-bottom: 20px;">I file verranno salvati su MinIO nel loro formato originale senza alcuna modifica.</p>
+				<div class="eyebrow">02 / Percorso di salvataggio (Opzionale)</div>
+				<input type="text" id="allUploadPath" name="uploadPath" placeholder="es. cartella/file" style="width:100%; margin-top:6px; margin-bottom: 20px; padding:6px; border:1px solid #48514a; background:#29332c; color:var(--white); font:11px 'DM Mono',monospace;">
+				<button id="allSubmitButton" type="submit" disabled>Seleziona file</button>
+				<div id="allMessage" role="status"></div>
 			</section>
 		</form>
 			<section id="results"><div class="result-head"><h2>File elaborati</h2><span id="resultSizes"></span></div><div class="gallery" id="gallery"></div></section>
@@ -167,7 +180,7 @@
 			sessionStorage.setItem('activeApiKey', e.target.value.trim());
 		});
 
-		document.getElementById('generateApiKey').addEventListener('click', async () => { const result = document.getElementById('apiResult'); const name = document.getElementById('apiNameInput').value; const bucket = document.getElementById('apiBucketSelect').value; if (!name || !bucket) { result.textContent = 'Inserisci nome e seleziona un bucket'; result.classList.add('visible'); return; } result.textContent = 'Generazione...'; result.classList.add('visible'); try { const response = await fetch('/api/auth/api-key', { method:'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ name, bucket }) }); const data = await response.json(); if (!response.ok) throw new Error(data.error); const endpoint = `${location.origin}${data.uploadEndpoint}`; result.innerHTML = `<div class="api-status"><i></i>Chiave attiva</div><span class="api-label">API key (VISIBILE SOLO ORA)</span><div class="api-field" id="apiFieldContainer"><code class="api-value" id="apiKeyValue"></code><button class="api-copy" id="copyApiKey" type="button">Copia</button></div><span class="api-label">Endpoint upload</span><code class="api-value" style="display:block;margin-top:5px">${endpoint}</code><pre class="api-snippet">curl -H "x-api-key: LA_TUA_CHIAVE" \\\n  -F "file=@foto.jpg" \\\n  -F "sizes=800x600" \\\n  ${endpoint}</pre><small class="api-note">Conserva questa chiave in un secret manager. Non inserirla in codice frontend pubblico.</small>`; document.getElementById('apiKeyValue').textContent = data.apiKey; document.getElementById('copyApiKey').addEventListener('click', async () => { await navigator.clipboard?.writeText(data.apiKey); document.getElementById('apiFieldContainer').innerHTML = '<span style="color:var(--acid); font:11px monospace">Chiave nascosta per sicurezza. Se l\'hai persa, generane un\'altra.</span>'; }); } catch (error) { result.textContent = error.message; } });
+		document.getElementById('generateApiKey').addEventListener('click', async () => { const result = document.getElementById('apiResult'); const name = document.getElementById('apiNameInput').value; const bucket = document.getElementById('apiBucketSelect').value; if (!name || !bucket) { result.textContent = 'Inserisci nome e seleziona un bucket'; result.classList.add('visible'); return; } result.textContent = 'Generazione...'; result.classList.add('visible'); try { const response = await fetch('/api/auth/api-key', { method:'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ name, bucket }) }); const data = await response.json(); if (!response.ok) throw new Error(data.error); const endpoint = `${location.origin}${data.uploadEndpoint}`; result.innerHTML = `<div class="api-status"><i></i>Chiave attiva</div><span class="api-label">API key (VISIBILE SOLO ORA)</span><div class="api-field" id="apiFieldContainer"><code class="api-value" id="apiKeyValue"></code><button class="api-copy" id="copyApiKey" type="button">Copia</button></div><span class="api-label">Endpoint upload</span><code class="api-value" style="display:block;margin-top:5px">${endpoint}</code><pre class="api-snippet">curl -H "x-api-key: LA_TUA_CHIAVE" \\\n  -F "file=@foto.jpg" \\\n  -F "sizes=800x600" \\\n  ${endpoint}</pre><small class="api-note">Conserva questa chiave in un secret manager. Non inserirla in codice frontend pubblico.</small>`; document.getElementById('apiKeyValue').textContent = data.apiKey; document.getElementById('copyApiKey').addEventListener('click', async () => { await navigator.clipboard?.writeText(data.apiKey); const btn = document.getElementById('copyApiKey'); btn.textContent = 'Copiato!'; btn.style.background = 'var(--acid)'; btn.style.color = 'var(--ink)'; setTimeout(() => { btn.textContent = 'Copia'; btn.style.background = '#48514a'; btn.style.color = 'var(--white)'; }, 2000); }); } catch (error) { result.textContent = error.message; } });
 		
 		// Fetch buckets on load
 		async function loadBuckets() {
@@ -187,7 +200,22 @@
 		}
 		loadBuckets();
 		addSize.addEventListener('click', () => { if (customSizes.children.length >= 2) return; const wrapper = document.createElement('label'); wrapper.className = 'custom-size'; wrapper.innerHTML = '<input name="sizes" type="text" pattern="[0-9]{1,5}x[0-9]{1,5}" placeholder="es. 1024x768" aria-label="Dimensione personalizzata">'; customSizes.appendChild(wrapper); if (customSizes.children.length >= 2) addSize.disabled = true; });
-		input.addEventListener('change', () => { if (input.files.length > 0) { label.textContent = input.files.length === 1 ? input.files[0].name : `${input.files.length} file selezionati`; submit.disabled = false; submit.textContent = 'Crea versioni'; } else { label.textContent = "Trascina qui le immagini"; submit.disabled = true; } });
+		input.addEventListener('change', () => {
+			if (input.files.length > 0) {
+				const invalidFiles = Array.from(input.files).filter(f => !f.type.startsWith('image/'));
+				if (invalidFiles.length > 0) {
+					input.value = '';
+					label.textContent = "Trascina qui le immagini"; submit.disabled = true;
+					message.textContent = "File non supportato in questa sezione. Andare nella sezione 'File'.";
+					return;
+				}
+				message.textContent = "";
+				label.textContent = input.files.length === 1 ? input.files[0].name : `${input.files.length} file selezionati`;
+				submit.disabled = false; submit.textContent = 'Crea versioni';
+			} else {
+				label.textContent = "Trascina qui le immagini"; submit.disabled = true;
+			}
+		});
 		['dragenter','dragover'].forEach(event => zone.addEventListener(event, e => { e.preventDefault(); zone.classList.add('dragging'); }));
 		['dragleave','drop'].forEach(event => zone.addEventListener(event, e => { e.preventDefault(); zone.classList.remove('dragging'); }));
 		zone.addEventListener('drop', e => { if (e.dataTransfer.files[0]) { input.files = e.dataTransfer.files; input.dispatchEvent(new Event('change')); } });
@@ -195,7 +223,10 @@
 			e.preventDefault(); 
 			const currentApiKey = sessionApiInput.value.trim();
 			if (!currentApiKey) { message.textContent = 'Errore: Inserisci la tua API Key in alto'; return; }
-			const selectedSizes = [...form.querySelectorAll('input[name="sizes"]')].filter(size => size.type === 'checkbox' ? size.checked : size.value.trim()); if (!selectedSizes.length) { message.textContent = 'Seleziona almeno una dimensione'; return; } submit.disabled = true; submit.textContent = 'Elaborazione in corso...'; message.textContent = 'Invio a MinIO e creazione varianti'; document.getElementById('results').classList.remove('visible'); const keepOriginal = form.querySelector('input[name="keepOriginal"]:checked').value; const gallery = document.getElementById('gallery'); gallery.innerHTML = '';
+			const selectedSizes = [...form.querySelectorAll('input[name="sizes"]')].filter(size => size.type === 'checkbox' ? size.checked : size.value.trim()); 
+			const keepOriginal = form.querySelector('input[name="keepOriginal"]:checked').value;
+			if (keepOriginal !== 'only' && !selectedSizes.length) { message.textContent = 'Seleziona almeno una dimensione'; return; } 
+			submit.disabled = true; submit.textContent = 'Elaborazione in corso...'; message.textContent = 'Invio a MinIO e creazione varianti'; document.getElementById('results').classList.remove('visible'); const gallery = document.getElementById('gallery'); gallery.innerHTML = '';
 			try {
 				const files = Array.from(input.files);
 				const promises = files.map(async file => {
@@ -222,14 +253,41 @@
 			} catch (error) { message.textContent = error.message; } finally { submit.disabled = false; submit.textContent = 'Crea versioni'; }
 		});
 
-		// Video tab
-		const tabFoto = document.getElementById('tabFoto'); const tabVideo = document.getElementById('tabVideo'); const videoForm = document.getElementById('videoForm');
-		tabFoto.addEventListener('click', () => { tabFoto.classList.add('active'); tabVideo.classList.remove('active'); form.style.display = 'grid'; videoForm.style.display = 'none'; });
-		tabVideo.addEventListener('click', () => { tabVideo.classList.add('active'); tabFoto.classList.remove('active'); form.style.display = 'none'; videoForm.style.display = 'grid'; });
+		// Tabs and Views
+		const tabTutti = document.getElementById('tabTutti'); const tabFoto = document.getElementById('tabFoto'); const tabVideo = document.getElementById('tabVideo'); 
+		const allForm = document.getElementById('allForm'); const videoForm = document.getElementById('videoForm');
+		
+		tabTutti.addEventListener('click', () => { 
+			tabTutti.classList.add('active'); tabFoto.classList.remove('active'); tabVideo.classList.remove('active'); 
+			allForm.style.display = 'grid'; form.style.display = 'none'; videoForm.style.display = 'none'; 
+		});
+		tabFoto.addEventListener('click', () => { 
+			tabFoto.classList.add('active'); tabTutti.classList.remove('active'); tabVideo.classList.remove('active'); 
+			form.style.display = 'grid'; allForm.style.display = 'none'; videoForm.style.display = 'none'; 
+		});
+		tabVideo.addEventListener('click', () => { 
+			tabVideo.classList.add('active'); tabTutti.classList.remove('active'); tabFoto.classList.remove('active'); 
+			videoForm.style.display = 'grid'; allForm.style.display = 'none'; form.style.display = 'none'; 
+		});
 
 		// Upload video
 		const videoInput = document.getElementById('videoFileInput'); const videoZone = document.getElementById('videoDropZone'); const videoLabel = document.getElementById('videoFileLabel'); const videoSubmit = document.getElementById('videoSubmitButton'); const videoMessage = document.getElementById('videoMessage');
-		videoInput.addEventListener('change', () => { if (videoInput.files.length > 0) { videoLabel.textContent = videoInput.files.length === 1 ? videoInput.files[0].name : `${videoInput.files.length} video selezionati`; videoSubmit.disabled = false; videoSubmit.textContent = 'Carica video'; } else { videoLabel.textContent = "Trascina qui i video"; videoSubmit.disabled = true; } });
+		videoInput.addEventListener('change', () => {
+			if (videoInput.files.length > 0) {
+				const invalidFiles = Array.from(videoInput.files).filter(f => !f.type.startsWith('video/'));
+				if (invalidFiles.length > 0) {
+					videoInput.value = '';
+					videoLabel.textContent = "Trascina qui i video"; videoSubmit.disabled = true;
+					videoMessage.textContent = "File non supportato in questa sezione. Andare nella sezione 'File'.";
+					return;
+				}
+				videoMessage.textContent = "";
+				videoLabel.textContent = videoInput.files.length === 1 ? videoInput.files[0].name : `${videoInput.files.length} video selezionati`;
+				videoSubmit.disabled = false; videoSubmit.textContent = 'Carica video';
+			} else {
+				videoLabel.textContent = "Trascina qui i video"; videoSubmit.disabled = true;
+			}
+		});
 		['dragenter','dragover'].forEach(event => videoZone.addEventListener(event, e => { e.preventDefault(); videoZone.classList.add('dragging'); }));
 		['dragleave','drop'].forEach(event => videoZone.addEventListener(event, e => { e.preventDefault(); videoZone.classList.remove('dragging'); }));
 		videoZone.addEventListener('drop', e => { if (e.dataTransfer.files[0]) { videoInput.files = e.dataTransfer.files; videoInput.dispatchEvent(new Event('change')); } });
@@ -261,6 +319,42 @@
 				results.forEach(data => { const tile = document.createElement('article'); tile.className = 'tile'; tile.innerHTML = `<video src="/api/files/object/${encodeURIComponent(data.original)}" style="width:100%; aspect-ratio:1; object-fit:cover; background:#000;" controls></video><p>${data.original.split('/').pop()}</p>`; gallery.appendChild(tile); });
 				document.getElementById('results').classList.add('visible');
 			} catch (error) { videoMessage.textContent = error.message; } finally { videoSubmit.disabled = false; videoSubmit.textContent = 'Carica video'; }
+		});
+
+		// Upload Tutti i file (nuova sezione senza controlli o resize)
+		const allInput = document.getElementById('allFileInput'); const allZone = document.getElementById('allDropZone'); const allLabel = document.getElementById('allFileLabel'); const allSubmit = document.getElementById('allSubmitButton'); const allMessage = document.getElementById('allMessage');
+		allInput.addEventListener('change', () => { if (allInput.files.length > 0) { allLabel.textContent = allInput.files.length === 1 ? allInput.files[0].name : `${allInput.files.length} file selezionati`; allSubmit.disabled = false; allSubmit.textContent = 'Carica file'; } else { allLabel.textContent = "Trascina qui qualsiasi file"; allSubmit.disabled = true; } });
+		['dragenter','dragover'].forEach(event => allZone.addEventListener(event, e => { e.preventDefault(); allZone.classList.add('dragging'); }));
+		['dragleave','drop'].forEach(event => allZone.addEventListener(event, e => { e.preventDefault(); allZone.classList.remove('dragging'); }));
+		allZone.addEventListener('drop', e => { if (e.dataTransfer.files[0]) { allInput.files = e.dataTransfer.files; allInput.dispatchEvent(new Event('change')); } });
+		
+		allForm.addEventListener('submit', async e => {
+			e.preventDefault(); 
+			const currentApiKey = sessionApiInput.value.trim();
+			if (!currentApiKey) { allMessage.textContent = 'Errore: Inserisci la tua API Key in alto'; return; }
+			allSubmit.disabled = true; allSubmit.textContent = 'Caricamento in corso...'; allMessage.textContent = 'Invio a MinIO in corso...';
+			document.getElementById('results').classList.remove('visible'); const gallery = document.getElementById('gallery'); gallery.innerHTML = '';
+			try {
+				const files = Array.from(allInput.files);
+				const promises = files.map(async file => {
+					const formData = new FormData(); formData.append('file', file);
+					formData.append('path', document.getElementById('allUploadPath').value.trim());
+					const selectedBucket = document.getElementById('apiBucketSelect').value.trim();
+					if (selectedBucket) formData.append('bucket', selectedBucket);
+					const response = await fetch('/api/files/upload-api', { 
+						method:'POST', 
+						headers: { 'x-api-key': currentApiKey },
+						body: formData 
+					});
+					const data = await response.json();
+					if (!response.ok) throw new Error(data.error || 'Upload non riuscito');
+					return data;
+				});
+				const results = await Promise.all(promises);
+				allMessage.textContent = `${results.length} file salvati con successo!`; document.getElementById('resultSizes').textContent = 'File Originali'; 
+				results.forEach(data => { const tile = document.createElement('div'); tile.style.padding = '10px'; tile.style.border = '1px solid var(--line)'; tile.style.background = 'var(--white)'; tile.innerHTML = `<p style="margin:0; font:11px 'DM Mono',monospace; color:var(--muted);">${data.original.split('/').pop()}</p>`; gallery.appendChild(tile); });
+				document.getElementById('results').classList.add('visible');
+			} catch (error) { allMessage.textContent = error.message; } finally { allSubmit.disabled = false; allSubmit.textContent = 'Carica file'; }
 		});
 
 		// Gestisci API Modal

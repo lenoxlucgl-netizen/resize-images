@@ -113,7 +113,7 @@ CREATE TABLE `admin` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 ```
 
-Inserire l'utente `admin` con la password in chiaro oppure il suo hash `SHA-256`.
+Inserire l'utente `admin` assicurandosi che la password sia salvata **esclusivamente** come hash `SHA-256`. Non inserire password in chiaro, in quanto il sistema le rifiuterà automaticamente.
 
 ### Tabella `token`
 ```sql

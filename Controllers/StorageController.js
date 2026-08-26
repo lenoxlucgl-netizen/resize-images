@@ -6,8 +6,8 @@ class StorageController {
     try {
       if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
-      // Il bucket di destinazione è quello richiesto, altrimenti quello di default
-      const targetBucket = (req.body.bucket && req.body.bucket.trim()) ? req.body.bucket.trim() : (process.env.MINIO_BUCKET || 'savedimages');
+      // Il bucket di destinazione è quello richiesto, altrimenti quello dell'API key, altrimenti default
+      const targetBucket = (req.body.bucket && req.body.bucket.trim()) ? req.body.bucket.trim() : (req.authorizedBucket || process.env.MINIO_BUCKET || 'savedimages');
 
       // Se l'API key è limitata a un bucket, deve coincidere con il bucket di destinazione
       if (req.authorizedBucket && req.authorizedBucket !== targetBucket) {
@@ -27,33 +27,59 @@ class StorageController {
 
       const cleanName = req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, '-');
       const key = customPath ? `${customPath}/${cleanName}` : cleanName;
-      const isVideo = req.file.mimetype.startsWith('video/');
+      const isImage = req.file.mimetype.startsWith('image/');
 
-      if (isVideo) {
-        const videoKey = customPath ? `${customPath}/${cleanName}` : `videos/${cleanName}`;
-        await StorageService.uploadFile(bucket, videoKey, req.file.buffer, req.file.mimetype);
+      if (!isImage) {
+        const folder = req.file.mimetype.startsWith('video/') ? 'videos' : 'files';
+        const fileKey = customPath ? `${customPath}/${cleanName}` : `${folder}/${cleanName}`;
+        if (await StorageService.fileExists(bucket, fileKey)) {
+          return res.status(409).json({ error: 'Errore: File già presente' });
+        }
+        await StorageService.uploadFile(bucket, fileKey, req.file.buffer, req.file.mimetype);
         return res.status(201).json({ 
-          original: videoKey,
+          original: fileKey,
           keepOriginal: true,
           variants: [],
-          message: 'Video salvato correttamente'
+          message: 'File salvato correttamente'
+        });
+      }
+
+      if (req.body.keepOriginal === 'only') {
+        const originalFinalKey = customPath ? `${customPath}/${cleanName}` : cleanName;
+        if (await StorageService.fileExists(bucket, originalFinalKey)) {
+          return res.status(409).json({ error: 'Errore: Immagine già presente' });
+        }
+        await StorageService.uploadFile(bucket, originalFinalKey, req.file.buffer, req.file.mimetype);
+        return res.status(201).json({ 
+          original: originalFinalKey,
+          keepOriginal: true,
+          variants: [],
+          message: 'Immagine originale salvata'
         });
       }
 
       const keepOriginal = req.body.keepOriginal !== 'false';
       const requestedSizes = Array.isArray(req.body.sizes) ? req.body.sizes : [req.body.sizes];
       const sizes = requestedSizes.map(size => String(size || '').trim()).filter(Boolean);
-      if (!sizes.length || sizes.length > 5 || new Set(sizes).size !== sizes.length || sizes.some(size => {
+      if (!sizes.length || new Set(sizes).size !== sizes.length || sizes.some(size => {
         const dimensions = size.split('x').map(Number);
         return !/^\d{1,5}x\d{1,5}$/.test(size) || dimensions.some(dimension => dimension === 0);
       })) {
         return res.status(400).json({ error: 'Seleziona almeno una dimensione valida' });
       }
 
-      const { variants, originalDimension } = await ResizeService.processImage(req.file.buffer, cleanName, bucket, sizes, customPath, customResizedPath);
-      
+      // Controlla se la prima variante esiste per bloccare in anticipo il processo sui duplicati
+      const firstSize = sizes[0];
       const ext = cleanName.split('.').pop();
       const baseName = cleanName.substring(0, cleanName.lastIndexOf('.'));
+      const finalResizedPath = customResizedPath !== null ? customResizedPath : customPath;
+      const firstOutputKey = finalResizedPath ? `${finalResizedPath}/${baseName}-${firstSize}.${ext}` : `${baseName}-${firstSize}.${ext}`;
+      if (await StorageService.fileExists(bucket, firstOutputKey)) {
+        return res.status(409).json({ error: 'Errore: Immagine già presente' });
+      }
+
+      const { variants, originalDimension } = await ResizeService.processImage(req.file.buffer, cleanName, bucket, sizes, customPath, customResizedPath);
+      
       const originalFinalKey = customPath ? `${customPath}/${baseName}-${originalDimension}.${ext}` : `${baseName}-${originalDimension}.${ext}`;
 
       if (keepOriginal) {

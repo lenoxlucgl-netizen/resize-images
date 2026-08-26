@@ -7,11 +7,7 @@ const apiKey = require('../middlewares/apiKey');
 const adminAuth = require('../middlewares/adminAuth');
 
 const upload = multer({
-	storage: multer.memoryStorage(),
-	limits: { fileSize: 100 * 1024 * 1024 }, // Limite 100MB
-	fileFilter: (req, file, cb) => {
-		cb(null, /^(image|video)\/(jpeg|png|webp|gif|avif|tiff|mp4|webm|quicktime|x-msvideo)$/.test(file.mimetype));
-	}
+	storage: multer.memoryStorage()
 });
 
 router.get('/buckets', adminAuth, async (req, res) => {

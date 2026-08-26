@@ -6,11 +6,11 @@ Questo progetto è una piattaforma Node.js/Express per il caricamento e il ridim
 
 Il flusso principale consente di:
 
-1. aprire una pagina web (suddivisa nei tab **Foto** e **Video**);
-2. selezionare o trascinare immagini o video;
+1. aprire una pagina web (suddivisa nei tab **Tutti i file**, **Foto** e **Video**);
+2. selezionare o trascinare qualsiasi tipo di file (immagini, video, documenti, ecc.);
 3. specificare opzionalmente percorsi (cartelle) personalizzati e un bucket di destinazione;
-4. per le immagini, scegliere se conservare anche il file originale e selezionare una o più dimensioni di output (le varianti verranno generate mantenendo le proporzioni);
-5. per i video, salvare il file nel formato originale senza ridimensionamenti;
+4. per le immagini, scegliere se conservare l'originale (o salvarlo in modo esclusivo) e selezionare un numero illimitato di dimensioni di output;
+5. per i video e gli altri file generici, salvarli nel formato originale senza manipolazioni;
 6. salvare i file in un bucket MinIO compatibile S3;
 7. visualizzare nella pagina l'esito e le immagini/video salvati.
 
@@ -164,20 +164,23 @@ Il client viene costruito in `config/storage.js` tramite `S3Client`:
 
 La UI è definita in `public/index.php`.
 
-Offre due tab principali: **Foto** e **Video**.
+Offre tre tab principali: **Tutti i file**, **Foto** e **Video**.
+
+**Tab Tutti i file**:
+- permette il caricamento di qualsiasi formato di file (PDF, ZIP, documenti, ecc.);
+- salva i file nel formato originale senza elaborazioni, posizionandoli nella cartella `files/` o nel percorso personalizzato.
 
 **Tab Foto**:
-- selezione file dal browser o drag-and-drop;
-- filtro dei formati immagine accettati (limite visivo di 15 MB);
+- selezione file dal browser o drag-and-drop (con validazione per accettare solo immagini);
+- nessun limite massimo di dimensione o peso;
 - opzioni per specificare il *Percorso Originale* e il *Percorso Modificate* nel bucket;
-- scelta tra conservare o non conservare l'originale;
-- tre dimensioni predefinite: `200x200`, `400x400`, `680x680`;
-- massimo due campi aggiuntivi per dimensioni personalizzate;
-- messaggi di avanzamento o errore;
+- scelta tra conservare l'originale, conservare modificate + originale, o **Solo originale** (ignora le dimensioni e salva il file intero);
+- tre dimensioni predefinite, ma con la possibilità di aggiungere **infinite** dimensioni personalizzate;
+- messaggi di avanzamento o errore (incluso errore 409 se l'immagine è già presente per evitare duplicati);
 - galleria delle varianti prodotte.
 
 **Tab Video**:
-- selezione file video o drag-and-drop (limite visivo di 100 MB);
+- selezione file video o drag-and-drop (con validazione per accettare solo video);
 - opzione per specificare il *Percorso di salvataggio* nel bucket;
 - i video vengono caricati nel loro formato originale (non vengono ridimensionati).
 
@@ -232,26 +235,17 @@ Multer usa `memoryStorage()`, quindi il file viene tenuto in memoria durante l'e
 
 ### 6.2 Formati accettati
 
-La route accetta questi MIME type per le immagini:
+La route accetta **qualsiasi tipo di file**. 
+Non è presente alcun limite al peso dei file (nessun limite di 15 MB o 100 MB).
 
-- `image/jpeg`;
-- `image/png`;
-- `image/webp`;
-- `image/gif`;
-- `image/avif`;
-- `image/tiff`.
+Internamente, il sistema controlla il MIME Type del file:
+- Se inizia con `image/`: lo tratta come immagine.
+- Se inizia con `video/`: lo tratta come video (salvato in `videos/`).
+- Tutti gli altri formati: li tratta come file generici (salvati in `files/`).
 
-Per i video accetta:
-- `video/mp4`;
-- `video/webm`;
-- `video/quicktime`;
-- `video/x-msvideo`.
+I file non-immagine (o le immagini con opzione `keepOriginal: only`) vengono salvati integralmente alla posizione indicata senza subire ridimensionamenti.
 
-Se il file è un video, viene salvato integralmente alla posizione indicata (o in `videos/`) senza subire ridimensionamenti.
-
-La dimensione massima consigliata e bloccata lato UI è di 15 MB per le foto e 100 MB per i video.
-
-Il filtro MIME è un primo controllo pratico, ma non sostituisce una verifica completa del contenuto binario.
+Inoltre, il sistema verifica l'esistenza di eventuali **duplicati**: se un file con il medesimo percorso e nome esiste già nel bucket, il server blocca il caricamento e restituisce un errore `409 Conflict`.
 
 ### 6.3 Validazione delle dimensioni
 
@@ -259,9 +253,8 @@ Il controller legge tutti i campi `sizes` ricevuti.
 
 Le regole sono:
 
-- almeno una dimensione;
-- massimo cinque dimensioni totali;
-- massimo due personalizzate, considerando i tre preset presenti nella UI;
+- almeno una dimensione (se non è selezionata l'opzione "Solo originale");
+- nessun limite al numero totale di dimensioni;
 - nessun duplicato;
 - formato obbligatorio `numero x numero`;
 - larghezza e altezza composte da massimo cinque cifre;

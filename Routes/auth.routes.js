@@ -13,9 +13,8 @@ router.post('/login', async (req, res) => {
   try {
     const [rows] = await db.query('SELECT password FROM admin WHERE username = ?', [username]);
     
-    // Supportiamo sia la password salvata in chiaro (nel caso sia stata inserita a mano da phpMyAdmin) 
-    // sia quella correttamente hashata in SHA-256.
-    if (rows.length > 0 && (rows[0].password === passwordHash || rows[0].password === password)) {
+    // Supportiamo solo la password hashata in SHA-256.
+    if (rows.length > 0 && rows[0].password === passwordHash) {
       const token = crypto.createHmac('sha256', process.env.APP_SECRET || 'fallback_secret').update(username).digest('hex');
       return res.json({ token });
     }
