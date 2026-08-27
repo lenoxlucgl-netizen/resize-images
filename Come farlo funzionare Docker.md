@@ -2,7 +2,7 @@
 
 Ho preparato il progetto per far girare tutto in container Docker, così ci togliamo dai piedi i soliti problemi di compatibilità e le dipendenze con Node.js. L'app funziona ovunque allo stesso modo.
 
-## Come funziona la magia sotto il cofano?
+## Come funziona:
 
 Invece di avere un singolo container gigante che fa tutto (il che è considerato sbagliatissimo su Docker), ho usato **Docker Compose** per orchestrare più servizi separati. 
 
