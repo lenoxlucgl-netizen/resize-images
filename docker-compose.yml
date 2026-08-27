@@ -6,40 +6,22 @@ services:
     container_name: resize_image_app
     ports:
       - "3003:3003"
-    environment:
-      - PORT=3003
-      - NODE_ENV=production
-      - DB_HOST=mysql
-      - DB_PORT=3306
-      - DB_NAME=resize_image
-      - DB_USER=root
-      - DB_PASSWORD=root
-      - STORAGE_TYPE=minio
-      - MINIO_ENDPOINT=http://minio:9000
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin
-      - MINIO_BUCKET=savedimages
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - ADMIN_USERNAME=admin
-      - ADMIN_PASSWORD_HASH=d9b5bf0981315efee593a7b45eda8e501502d38a39b8ca1bf52da29d87287fbe
-      - RESIZE_SIZES=200x200,400x400,680x680
-      - KEEP_ORIGINAL=true
-      - RESIZED_PATH=/
+    env_file:
+      - .env.docker
     depends_on:
       - mysql
       - minio
+      - redis
 
   mysql:
     image: mysql:8.0
     container_name: resize_image_mysql
     ports:
       - "3306:3306"
-    environment:
-      - MYSQL_ROOT_PASSWORD=root
-      - MYSQL_DATABASE=resize_image
+    env_file:
+      - .env.docker
     volumes:
-      - mysql_data:/var/lib/mysql
+      - ./mysql_data:/var/lib/mysql
       - ./mysql-init:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
@@ -53,12 +35,11 @@ services:
     ports:
       - "9000:9000"
       - "9001:9001"
-    environment:
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin
+    env_file:
+      - .env.docker
     command: server /data --console-address ":9001"
     volumes:
-      - minio_data:/data
+      - ./minio_data:/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 10s
@@ -68,17 +49,31 @@ services:
   minio-init:
     image: minio/mc
     container_name: resize_image_minio_init
+    env_file:
+      - .env.docker
     depends_on:
       minio:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc alias set myminio http://minio:9000 minioadmin minioadmin;
-      /usr/bin/mc mb myminio/savedimages || true;
-      /usr/bin/mc anonymous set public myminio/savedimages || true;
+      /usr/bin/mc alias set myminio http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD;
+      /usr/bin/mc mb myminio/$$MINIO_BUCKET || true;
+      /usr/bin/mc anonymous set public myminio/$$MINIO_BUCKET || true;
       exit 0;
       "
 
-volumes:
-  mysql_data:
-  minio_data:
+  redis:
+    image: redis:alpine
+    container_name: resize_image_redis
+    ports:
+      - "6379:6379"
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: resize_image_phpmyadmin
+    ports:
+      - "8080:80"
+    env_file:
+      - .env.docker
+    depends_on:
+      - mysql

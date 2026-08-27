@@ -8,3 +8,5 @@ data/
 saved-images/
 api-keys.json
 .env
+mysql_data/
+minio_data/

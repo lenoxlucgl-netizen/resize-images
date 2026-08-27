@@ -1,0 +1,7 @@
+L'enviroment non metterlo nell file docker-compose ma dal docker-compose fare richiamare il file env.
+
+Devo indagare sul redice se viene creato da MInAIO o lod dobbiamo creare noi per lui.
+
+In poi assicurati che le cartelle minio_data e mysql_data.
+
+Aggiungere un servizio phpMyadmin per navigare il DB mysql.
