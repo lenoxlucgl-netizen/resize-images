@@ -21,15 +21,19 @@ docker build -t resize-images-platform .
 
 ## 2. Avviare il container
 
+Poiché il container Docker è isolato dal tuo computer, se l'applicazione cerca di collegarsi a `localhost` o `127.0.0.1` (ad esempio per MinIO o MySQL), cercherà questi servizi *all'interno del container stesso*, e fallirà.
+
+Per risolvere questo problema, è stato preparato un file `.env.docker` in cui gli indirizzi `localhost` e `127.0.0.1` sono stati sostituiti con `host.docker.internal`, che è un indirizzo speciale fornito da Docker Desktop per permettere al container di comunicare con il tuo sistema host Windows.
+
 Una volta creata l'immagine, puoi avviare il container con il seguente comando:
 
 ```bash
-docker run -p 3003:3003 --env-file .env -d resize-images-platform
+docker run -p 3003:3003 --env-file .env.docker -d resize-images-platform
 ```
 
 ### Spiegazione dei parametri:
 - `-p 3003:3003`: Mappa la porta 3003 del tuo computer alla porta 3003 all'interno del container. Il primo numero è la porta host (quella da cui accederai all'app), il secondo è la porta del container (dove gira l'app internamente).
-- `--env-file .env`: Indica a Docker di leggere le variabili d'ambiente dal file `.env` locale e passarle al container. Assicurati che il file `.env` esista e sia configurato correttamente prima di avviare il container.
+- `--env-file .env.docker`: Indica a Docker di leggere le variabili d'ambiente dal file `.env.docker` che contiene l'host corretto (`host.docker.internal`) per i servizi esterni.
 - `-d`: Avvia il container in modalità "detached", ovvero in background. Il terminale rimarrà libero.
 - `resize-images-platform`: È il nome dell'immagine che abbiamo costruito nel passaggio precedente.
 
