@@ -28,8 +28,8 @@ L'idea mi è venuta guardando l'estensione Firebase **Storage Resize Images**, m
 - **MinIO**: storage a oggetti locale compatibile con API S3.
 - **Helmet**: intestazioni HTTP di sicurezza e Content Security Policy.
 - **CORS**: gestione delle richieste cross-origin.
-- **dotenv**: caricamento delle variabili dal file `.env`.
-- **PostgreSQL e Redis**: li ho già predisposti per funzionalità aggiuntive (tipo i worker o db relazionale), ma non servono per il flusso web base.
+- **dotenv**: caricamento delle variabili dal file `.env` (o `.env.docker` se siamo su Docker).
+- **PostgreSQL e Redis**: li ho già predisposti per funzionalità aggiuntive. Redis in particolare l'ho già piazzato acceso nel Docker pronto all'uso, anche se per il momento nel flusso web base non fa ancora nulla.
 
 Ah, una nota: il file `public/index.php` in realtà è puro HTML con JS e CSS dentro. Non lo esegue PHP, ma lo sputa fuori direttamente Express come pagina statica.
 
@@ -592,7 +592,7 @@ Non hai bisogno di installare nulla a mano! Ti basta avere Docker installato e f
 ```powershell
 docker compose up -d --build
 ```
-Questo comando accende automaticamente l'app Node.js (`http://localhost:3003`), MinIO (`http://localhost:9001`) e MySQL, creando già il database e il bucket pronti all'uso.
+Questo comando accende automaticamente l'app Node.js (`http://localhost:3003`), MinIO (`http://localhost:9001`), MySQL, phpMyAdmin (`http://localhost:8080`) e Redis. Le cartelle dei dati (`minio_data` e `mysql_data`) compariranno in locale per averle sempre sott'occhio. Inoltre, tutte le configurazioni verranno lette dal comodissimo file `.env.docker`.
 
 **Metodo Manuale (Senza Docker):**
 Prerequisiti:
