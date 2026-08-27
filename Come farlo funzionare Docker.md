@@ -1,45 +1,47 @@
-# Setup con Docker
+# Setup con Docker Compose
 
-Ho preparato il progetto per girare in un container Docker, così ci togliamo dai piedi i soliti problemi di compatibilità e le dipendenze con Node.js e l'app funziona ovunque allo stesso modo.
+Ho preparato il progetto per far girare tutto in container Docker, così ci togliamo dai piedi i soliti problemi di compatibilità e le dipendenze con Node.js. L'app funziona ovunque allo stesso modo.
+
+## Come funziona la magia sotto il cofano?
+
+Invece di avere un singolo container gigante che fa tutto (il che è considerato sbagliatissimo su Docker), ho usato **Docker Compose** per orchestrare più servizi separati. 
+
+Nel file `docker-compose.yml` ho definito questa struttura:
+1. **Container MySQL**: Usa l'immagine ufficiale di MySQL. Al primissimo avvio, legge il file `init.sql` che ho preparato nella cartella `mysql-init`. Questo script crea il database, le tabelle e inserisce in automatico l'utente admin con la password criptata.
+2. **Container MinIO**: È il nostro server per salvare le immagini (il sostituto di S3).
+3. **Container MinIO-Init**: È un container "usa e getta". Si accende solo per qualche secondo, aspetta che MinIO sia pronto, crea in automatico il bucket `savedimages` e gli dà i permessi pubblici, dopodiché si spegne da solo. Così non devi configurare la console di MinIO a mano!
+4. **Container App (Node.js)**: Costruisce la nostra applicazione a partire dal `Dockerfile`, la collega al database e a MinIO usando una rete privata interna di Docker in modo che comunichino in sicurezza.
+
+---
 
 ## Prerequisiti
 
-Serve solo aver installato [Docker](https://docs.docker.com/get-docker/) sulla macchina.
+Serve solo aver installato [Docker](https://docs.docker.com/get-docker/) (Docker Desktop su Windows) sulla macchina.
 
-## 1. Build dell'immagine
+## 1. Avvio di tutto l'ambiente (Consigliato su Windows)
 
-Per prima cosa dobbiamo buildare l'immagine partendo dal `Dockerfile`. Dalla root del progetto lancia:
+Il modo più veloce e ignorante per accendere tutto è fare **doppio click sul file `avvia_tutto.bat`** che si trova nella cartella del progetto.
 
+In alternativa, da terminale (dalla root del progetto), lancia:
 ```bash
-docker build -t resize-images-platform .
+docker compose up -d --build
 ```
 
-- `-t resize-images-platform`: diamo questo tag (nome) all'immagine, così la ritroviamo facilmente.
-- `.`: prende il contesto dalla cartella corrente.
+Tutti i servizi saranno già correttamente configurati per parlarsi tra di loro!
 
-## 2. Avvio del container
+**Credenziali di Default per il Login Web:**
+- Username: `admin`
+- Password: `0dPw16X22k2t2C.`
 
-Occhio a una cosa: siccome il container è isolato, se l'app cerca di puntare a `localhost` o `127.0.0.1` (tipo per connettersi a MinIO o MySQL sull'host), cercherà dentro al container stesso e crasherà.
+**Credenziali MinIO Console Web (su localhost:9001):**
+- Username: `minioadmin`
+- Password: `minioadmin`
 
-Per risolvere, ho già creato il file `.env.docker` dove al posto di `localhost` c'è `host.docker.internal`. Questo è un indirizzo speciale di Docker Desktop che permette al container di vedere l'host di Windows.
-
-Per tirare su il container:
-
-```bash
-docker run -p 3003:3003 --env-file .env.docker -d resize-images-platform
-```
-
-I parametri al volo:
-- `-p 3003:3003`: mappa la porta 3003 dell'host con la 3003 del container.
-- `--env-file .env.docker`: gli passiamo le variabili d'ambiente col fix per l'host.
-- `-d`: lo facciamo girare in background (detached).
-- `resize-images-platform`: l'immagine che abbiamo appena buildato.
-
-## 3. Check che tutto vada
+## 2. Check che tutto vada
 
 Per vedere i container attivi:
 ```bash
-docker ps
+docker compose ps
 ```
 
 Per testare se il server è su, apri `http://localhost:3003` dal browser oppure fai una curl sulla rotta di health:
@@ -47,21 +49,31 @@ Per testare se il server è su, apri `http://localhost:3003` dal browser oppure 
 curl http://localhost:3003/health
 ```
 
-## 4. Log
+## 3. Log
 
-Se ti serve debuggare o vedere i `console.log`:
+Se ti serve debuggare o vedere i log dell'applicazione web:
 ```bash
-docker logs <CONTAINER_ID>
-```
-Trovi l'ID facendo `docker ps`. Se vuoi seguire i log in tempo reale (stile tail), aggiungi `-f`:
-```bash
-docker logs -f <CONTAINER_ID>
+docker compose logs -f app
 ```
 
-## 5. Stop del container
-
-Per fermarlo:
+Se vuoi vedere i log di tutto mischiato (Node, MySQL, MinIO):
 ```bash
-docker stop <CONTAINER_ID>
+docker compose logs -f
 ```
-Se poi vuoi proprio piallarlo via, dai un `docker rm <CONTAINER_ID>`.
+
+## 4. Stop e pulizia
+
+Per fermare l'ambiente temporaneamente senza perdere niente:
+```bash
+docker compose stop
+```
+
+Se poi vuoi fermarlo e rimuovere i container (tranquillo, i dati di MySQL e MinIO verranno conservati nei volumi di Docker, così non perdi nulla al riavvio!):
+```bash
+docker compose down
+```
+
+Se vuoi piallare via tutto definitivamente, **inclusi i dati** (database e immagini caricate), aggiungi `-v`:
+```bash
+docker compose down -v
+```

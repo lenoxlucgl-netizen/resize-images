@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: resize_image_app
+    ports:
+      - "3003:3003"
+    environment:
+      - PORT=3003
+      - NODE_ENV=production
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=resize_image
+      - DB_USER=root
+      - DB_PASSWORD=root
+      - STORAGE_TYPE=minio
+      - MINIO_ENDPOINT=http://minio:9000
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+      - MINIO_BUCKET=savedimages
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD_HASH=d9b5bf0981315efee593a7b45eda8e501502d38a39b8ca1bf52da29d87287fbe
+      - RESIZE_SIZES=200x200,400x400,680x680
+      - KEEP_ORIGINAL=true
+      - RESIZED_PATH=/
+    depends_on:
+      - mysql
+      - minio
+
+  mysql:
+    image: mysql:8.0
+    container_name: resize_image_mysql
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=resize_image
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio
+    container_name: resize_image_minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio-init:
+    image: minio/mc
+    container_name: resize_image_minio_init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set myminio http://minio:9000 minioadmin minioadmin;
+      /usr/bin/mc mb myminio/savedimages || true;
+      /usr/bin/mc anonymous set public myminio/savedimages || true;
+      exit 0;
+      "
+
+volumes:
+  mysql_data:
+  minio_data:

@@ -80,7 +80,7 @@ Body:
 ```json
 {
   "username": "admin",
-  "password": "LA_TUA_PASSWORD"
+  "password": "0dPw16X22k2t2C."
 }
 ```
 

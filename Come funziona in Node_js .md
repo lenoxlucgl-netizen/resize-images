@@ -587,42 +587,39 @@ Il formato configurabile è una lista separata da virgole:
 
 ## 13. Avvio del progetto
 
-Prerequisiti:
+**Metodo Consigliato (Docker):**
+Non hai bisogno di installare nulla a mano! Ti basta avere Docker installato e fare doppio click sul file `avvia_tutto.bat` su Windows, oppure lanciare:
+```powershell
+docker compose up -d --build
+```
+Questo comando accende automaticamente l'app Node.js (`http://localhost:3003`), MinIO (`http://localhost:9001`) e MySQL, creando già il database e il bucket pronti all'uso.
 
+**Metodo Manuale (Senza Docker):**
+Prerequisiti:
 - Node.js 18 o superiore;
 - npm;
-- MinIO avviato;
-- bucket `savedimages` creato;
-- credenziali MinIO coerenti con `.env`.
+- MinIO e MySQL avviati;
+- bucket `savedimages` creato a mano;
+- credenziali coerenti con `.env`.
 
 Installazione dipendenze:
-
 ```powershell
 npm install
 ```
 
 Avvio:
-
 ```powershell
 npm start
 ```
 
 Sito:
-
 ```text
 http://localhost:3003
 ```
 
 Console MinIO:
-
 ```text
-http://127.0.0.1:62192/browser/savedimages
-```
-
-Se la porta `3003` è occupata, non è possibile avviare una seconda istanza sulla stessa porta. Occorre chiudere il processo esistente oppure scegliere una porta temporanea:
-
-```powershell
-$env:PORT=3010; npm start
+http://127.0.0.1:9001
 ```
 
 ---

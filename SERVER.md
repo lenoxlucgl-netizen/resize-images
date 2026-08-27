@@ -1,20 +1,15 @@
 # Image Resize - Setup su Windows
 
 Ecco gli step per tirare su il progetto su Windows.
+Ho configurato tutto usando **Docker Compose**, così ci togliamo dai piedi i soliti problemi di compatibilità e non devi sbatterti a installare Node.js, MySQL o MinIO a mano. Con un comando parte tutto da solo.
+
+---
 
 ## 1. Prerequisiti
 
-Ti serviranno:
-- Node.js 20 LTS
-- Git
-- MinIO per Windows
-
-Fai un check veloce per vedere se hai tutto:
-```powershell
-node -v
-npm -v
-git --version
-```
+Ti serviranno solo due cose:
+- **Docker Desktop** installato e aperto sulla macchina.
+- Git (per clonare il progetto)
 
 ---
 
@@ -28,170 +23,39 @@ cd resize-images
 
 ---
 
-## 3. Installazione dipendenze
+## 3. Avviare tutti i servizi (Il metodo magico)
 
-Se ci devi sviluppare sopra (Ambiente di sviluppo):
+Su Windows ti ho preparato uno script. Ti basta fare **doppio click sul file `avvia_tutto.bat`** che trovi nella cartella.
+
+Se preferisci il terminale, lancia:
 ```powershell
-npm install
+docker compose up -d --build
 ```
 
-Se invece lo devi mandare in produzione:
-```powershell
-npm install --omit=dev
-```
+Questo comando legge il file `docker-compose.yml` e tira su tre container separati che parlano tra di loro:
+- L'app Node.js (`http://localhost:3003`)
+- Il server MinIO per salvare le immagini (`http://localhost:9001`)
+- Il server MySQL (sulla porta `3306`)
 
 ---
 
-## 4. Configurazione del file .env
+## 4. Credenziali e Accesso
 
-Copia il file di esempio e aprilo:
-```powershell
-copy .env.example .env
-notepad .env
-```
+L'ambiente si autoconfigura al primo avvio. Ho fatto in modo che vengano creati da soli il database, le tabelle, l'utente admin e il bucket MinIO, così è tutto pronto all'uso.
 
-Io di solito lo configuro così:
-```env
-PORT=3003
-NODE_ENV=development
+**Dashboard Web (http://localhost:3003):**
+- Username: `admin`
+- Password: `0dPw16X22k2t2C.`
 
-APP_SECRET=STRINGA_CASUALE
-
-# Database MySQL
-DB_HOST=localhost
-DB_PORT=3306
-DB_NAME=resize_image
-DB_USER=root
-DB_PASSWORD=tua_password_mysql
-
-STORAGE_TYPE=minio
-
-MINIO_ENDPOINT=http://127.0.0.1:9000
-MINIO_ROOT_USER=minioadmin
-MINIO_ROOT_PASSWORD=minioadmin
-
-MINIO_BUCKET=savedimages
-
-RESIZE_SIZES=200x200,400x400,680x680
-KEEP_ORIGINAL=true
-RESIZED_PATH=/thumbs # Lascia vuoto per salvare le varianti direttamente nella root
-```
+**MinIO Console (http://localhost:9001):**
+- Username: `minioadmin`
+- Password: `minioadmin`
 
 ---
 
-## 5. Generare APP_SECRET
+## 5. Test Upload veloce da terminale
 
-Ti serve un secret per la sessione/auth, puoi generarlo al volo così:
-```powershell
-node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
-```
-
-Copia la stringa che esce e buttala nel parametro del `.env`:
-```env
-APP_SECRET=il_tuo_secret_generato
-```
-
----
-
-## 6. Configurazione MySQL (Auth e API Keys)
-
-Il sistema usa MySQL per le credenziali di amministrazione e le API Key. Assicurati di creare il database e le tabelle, magari da phpMyAdmin o console.
-
-### Database
-Nome: `resize_image`
-
-### Tabella `admin`
-```sql
-CREATE TABLE `admin` (
-  `admin_id` int(11) NOT NULL AUTO_INCREMENT,
-  `username` varchar(100) NOT NULL,
-  `password` varchar(100) NOT NULL,
-  PRIMARY KEY (`admin_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-```
-
-Quando inserisci l'utente `admin`, ricordati di salvare la password **solo** come hash `SHA-256`. Non metterla in chiaro, sennò il login fallisce.
-
-### Tabella `token`
-```sql
-CREATE TABLE `token` (
-  `api_keys` text NOT NULL,
-  `name` text NOT NULL,
-  `bucket` text NOT NULL,
-  `createdAT` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-```
-
----
-
-## 7. Avvio di MinIO
-
-### Avvio base
-```powershell
-.\minio.windows-amd64.RELEASE.2025-09-07T16-13-09Z.exe server data
-```
-
-### Avvio con credenziali personalizzate (se vuoi evitare quelle di default)
-```powershell
-$env:MINIO_ROOT_USER="minioadmin"
-$env:MINIO_ROOT_PASSWORD="PasswordMoltoSicura"
-
-.\minio.windows-amd64.RELEASE.2025-09-07T16-13-09Z.exe server data
-```
-
-### Endpoint che avrai a disposizione
-**API S3**: `http://localhost:9000`
-**Console Web**: `http://localhost:9001`
-
----
-
-## 8. Creazione del bucket
-
-Apri il browser su: `http://localhost:9001`
-Loggati con:
-- Username: `minioadmin` (o quello che hai scelto)
-- Password: `PasswordMoltoSicura`
-
-Crea un bucket e chiamalo `savedimages` (o come lo hai definito nel `.env`).
-
----
-
-## 9. Avviare l'applicazione
-
-Se stai sviluppando:
-```powershell
-npm run dev
-```
-
-In produzione:
-```powershell
-npm start
-```
-
-Ora l'app gira su `http://localhost:3003`.
-
----
-
-## 10. Verifica Health Check
-
-Vedi se è tutto vivo aprendo `http://localhost:3003/health` dal browser oppure:
-```powershell
-curl http://localhost:3003/health
-```
-
-Dovrebbe risponderti una cosa del tipo:
-```json
-{
-  "status": "ok",
-  "timestamp": "2026-08-26T08:00:00.000Z"
-}
-```
-
----
-
-## 11. Test Upload veloce da terminale
-
-Se vuoi testare al volo se carica la roba:
+Se vuoi testare al volo se carica la roba (ricordati di generare prima un'API key dalla dashboard):
 ```powershell
 curl -X POST `
   -H "x-api-key: imgf_TUA_API_KEY" `
@@ -203,55 +67,21 @@ curl -X POST `
 
 ---
 
-## 12. Gestire il processo con PM2 (Opzionale, utile per produzione)
+## (Opzionale) Sviluppo Manuale senza Docker
 
-Se non vuoi tenere il terminale aperto o vuoi che si riavvii se crasha:
+Se per qualche motivo vuoi farti del male e sviluppare fuori da Docker, devi fare tutto a mano:
 
-Installazione:
-```powershell
-npm install -g pm2
-```
-
-Avvio:
-```powershell
-pm2 start npm --name image-resize -- run dev
-```
-*(Usa `start` invece di `run dev` in produzione).*
-
-Altri comandi utili di PM2:
-```powershell
-pm2 status
-pm2 logs image-resize
-pm2 restart image-resize
-```
-
----
-
-## 13. Il setup che ti consiglio per sviluppare (2 terminali)
-
-Assicurati che nel `.env` ci sia:
-```env
-STORAGE_TYPE=minio
-MINIO_ENDPOINT=http://127.0.0.1:9000
-MINIO_ROOT_USER=minioadmin
-MINIO_ROOT_PASSWORD=minioadmin
-MINIO_BUCKET=savedimages
-```
-
-Poi apri **due** finestre di PowerShell:
-
-**Finestra 1 (MinIO):**
-```powershell
-.\minio.windows-amd64.RELEASE.2025-09-07T16-13-09Z.exe server data
-```
-
-**Finestra 2 (Node):**
-```powershell
-cd resize-images
-npm run dev
-```
-
-Finito. Da qui in poi hai:
-- L'app su `http://localhost:3003`
-- L'health check su `http://localhost:3003/health`
-- La UI di MinIO su `http://localhost:9001`
+1. Avvia MySQL e MinIO sul tuo PC.
+2. Crea il bucket `savedimages` e le tabelle nel database.
+3. Copia il file `.env.example` in `.env` e imposta le credenziali giuste:
+   ```env
+   PORT=3003
+   NODE_ENV=development
+   DB_HOST=localhost
+   DB_USER=root
+   DB_PASSWORD=latuapassword
+   MINIO_ENDPOINT=http://127.0.0.1:9000
+   MINIO_ROOT_USER=minioadmin
+   MINIO_ROOT_PASSWORD=minioadmin
+   ```
+4. Dai `npm install` e poi avvia con `npm run dev`.
