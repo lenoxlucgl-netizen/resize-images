@@ -1,60 +1,57 @@
-# Resize Images - Guida Installazione Windows
+# Image Resize - Setup su Windows
 
-## 1. Prerequisiti Windows
+Ecco gli step per tirare su il progetto su Windows.
 
-Installare:
+## 1. Prerequisiti
 
+Ti serviranno:
 - Node.js 20 LTS
 - Git
 - MinIO per Windows
 
-Verifica installazioni:
-
-powershell
+Fai un check veloce per vedere se hai tutto:
+```powershell
 node -v
 npm -v
 git --version
-
+```
 
 ---
 
 ## 2. Clonare il repository
 
-powershell
+Scarichiamoci il codice:
+```powershell
 git clone https://github.com/TUO_UTENTE/resize-images.git
 cd resize-images
-
+```
 
 ---
 
 ## 3. Installazione dipendenze
 
-### Ambiente di sviluppo
-
-powershell
+Se ci devi sviluppare sopra (Ambiente di sviluppo):
+```powershell
 npm install
+```
 
-
-### Ambiente di produzione
-
-powershell
+Se invece lo devi mandare in produzione:
+```powershell
 npm install --omit=dev
-
+```
 
 ---
 
 ## 4. Configurazione del file .env
 
-Creare il file:
-
-powershell
+Copia il file di esempio e aprilo:
+```powershell
 copy .env.example .env
 notepad .env
+```
 
-
-Configurazione esempio:
-
-env
+Io di solito lo configuro così:
+```env
 PORT=3003
 NODE_ENV=development
 
@@ -77,28 +74,28 @@ MINIO_BUCKET=savedimages
 
 RESIZE_SIZES=200x200,400x400,680x680
 KEEP_ORIGINAL=true
-RESIZED_PATH=/thumbs # Lasciare vuoto per salvare le varianti nella root
-
+RESIZED_PATH=/thumbs # Lascia vuoto per salvare le varianti direttamente nella root
+```
 
 ---
 
 ## 5. Generare APP_SECRET
 
-powershell
+Ti serve un secret per la sessione/auth, puoi generarlo al volo così:
+```powershell
 node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+```
 
-
-Copiare il valore generato nel parametro:
-
-env
-APP_SECRET=
-
+Copia la stringa che esce e buttala nel parametro del `.env`:
+```env
+APP_SECRET=il_tuo_secret_generato
+```
 
 ---
 
 ## 6. Configurazione MySQL (Auth e API Keys)
 
-Il sistema utilizza MySQL per salvare le credenziali di amministrazione e le API Key. Assicurati di creare il database e le relative tabelle tramite phpMyAdmin o console MySQL.
+Il sistema usa MySQL per le credenziali di amministrazione e le API Key. Assicurati di creare il database e le tabelle, magari da phpMyAdmin o console.
 
 ### Database
 Nome: `resize_image`
@@ -113,7 +110,7 @@ CREATE TABLE `admin` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 ```
 
-Inserire l'utente `admin` assicurandosi che la password sia salvata **esclusivamente** come hash `SHA-256`. Non inserire password in chiaro, in quanto il sistema le rifiuterà automaticamente.
+Quando inserisci l'utente `admin`, ricordati di salvare la password **solo** come hash `SHA-256`. Non metterla in chiaro, sennò il login fallisce.
 
 ### Tabella `token`
 ```sql
@@ -129,220 +126,132 @@ CREATE TABLE `token` (
 
 ## 7. Avvio di MinIO
 
-### Avvio standard
-
-powershell
+### Avvio base
+```powershell
 .\minio.windows-amd64.RELEASE.2025-09-07T16-13-09Z.exe server data
+```
 
-
-### Avvio con credenziali personalizzate
-
-powershell
+### Avvio con credenziali personalizzate (se vuoi evitare quelle di default)
+```powershell
 $env:MINIO_ROOT_USER="minioadmin"
 $env:MINIO_ROOT_PASSWORD="PasswordMoltoSicura"
 
 .\minio.windows-amd64.RELEASE.2025-09-07T16-13-09Z.exe server data
+```
 
-
-### Endpoint disponibili
-
-**API S3**
-
-text
-http://localhost:9000
-
-
-**Console Web**
-
-text
-http://localhost:9001
-
+### Endpoint che avrai a disposizione
+**API S3**: `http://localhost:9000`
+**Console Web**: `http://localhost:9001`
 
 ---
 
 ## 8. Creazione del bucket
 
-Aprire:
+Apri il browser su: `http://localhost:9001`
+Loggati con:
+- Username: `minioadmin` (o quello che hai scelto)
+- Password: `PasswordMoltoSicura`
 
-text
-http://localhost:9001
-
-
-Accedere con:
-
-text
-Username: minioadmin
-Password: PasswordMoltoSicura
-
-
-Creare il bucket:
-
-text
-savedimages
-
+Crea un bucket e chiamalo `savedimages` (o come lo hai definito nel `.env`).
 
 ---
 
 ## 9. Avviare l'applicazione
 
-### Ambiente di sviluppo
-
-powershell
+Se stai sviluppando:
+```powershell
 npm run dev
+```
 
-
-### Ambiente di produzione
-
-powershell
+In produzione:
+```powershell
 npm start
+```
 
-
-Applicazione disponibile su:
-
-text
-http://localhost:3003
-
+Ora l'app gira su `http://localhost:3003`.
 
 ---
 
 ## 10. Verifica Health Check
 
-### Browser
-
-text
-http://localhost:3003/health
-
-
-### PowerShell
-
-powershell
+Vedi se è tutto vivo aprendo `http://localhost:3003/health` dal browser oppure:
+```powershell
 curl http://localhost:3003/health
+```
 
-
-Risposta attesa:
-
-json
+Dovrebbe risponderti una cosa del tipo:
+```json
 {
   "status": "ok",
   "timestamp": "2026-08-26T08:00:00.000Z"
 }
-
+```
 
 ---
 
-## 11. Test Upload
+## 11. Test Upload veloce da terminale
 
-powershell
+Se vuoi testare al volo se carica la roba:
+```powershell
 curl -X POST `
   -H "x-api-key: imgf_TUA_API_KEY" `
   -F "file=@test.jpg" `
   -F "keepOriginal=true" `
   -F "sizes=200x200" `
   http://localhost:3003/api/files/upload-api
-
+```
 
 ---
 
-## 12. PM2 su Windows (Opzionale)
+## 12. Gestire il processo con PM2 (Opzionale, utile per produzione)
 
-### Installazione
+Se non vuoi tenere il terminale aperto o vuoi che si riavvii se crasha:
 
-powershell
+Installazione:
+```powershell
 npm install -g pm2
+```
 
-
-### Avvio
-
-powershell
+Avvio:
+```powershell
 pm2 start npm --name image-resize -- run dev
+```
+*(Usa `start` invece di `run dev` in produzione).*
 
-
-### Stato
-
-powershell
+Altri comandi utili di PM2:
+```powershell
 pm2 status
-
-
-### Log
-
-powershell
 pm2 logs image-resize
-
-
-### Riavvio
-
-powershell
 pm2 restart image-resize
-
+```
 
 ---
 
-## 13. Configurazione consigliata con il tuo comando MinIO
+## 13. Il setup che ti consiglio per sviluppare (2 terminali)
 
-### File .env
-
-env
+Assicurati che nel `.env` ci sia:
+```env
 STORAGE_TYPE=minio
-
 MINIO_ENDPOINT=http://127.0.0.1:9000
-
 MINIO_ROOT_USER=minioadmin
 MINIO_ROOT_PASSWORD=minioadmin
-
 MINIO_BUCKET=savedimages
+```
 
+Poi apri **due** finestre di PowerShell:
 
-### Finestra PowerShell 1
-
-powershell
+**Finestra 1 (MinIO):**
+```powershell
 .\minio.windows-amd64.RELEASE.2025-09-07T16-13-09Z.exe server data
+```
 
-
-### Finestra PowerShell 2
-
-powershell
+**Finestra 2 (Node):**
+```powershell
 cd resize-images
 npm run dev
+```
 
-
----
-
-## Verifica finale
-
-Dovrebbero essere raggiungibili:
-
-text
-http://localhost:3003
-
-
-text
-http://localhost:3003/health
-
-
-text
-http://localhost:9001
-
-
----
-
-## Architettura finale
-
-text
-┌──────────────────────┐
-│      Browser         │
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐
-│  Node.js (Port 3003) │
-│     npm run dev      │
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────┐
-│   MinIO (Port 9000)  │
-│      savedimages     │
-└──────────────────────┘
-
-Console MinIO:
-http://localhost:9001
+Finito. Da qui in poi hai:
+- L'app su `http://localhost:3003`
+- L'health check su `http://localhost:3003/health`
+- La UI di MinIO su `http://localhost:9001`

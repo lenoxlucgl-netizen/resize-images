@@ -2,19 +2,19 @@
 
 ## 1. Scopo del progetto
 
-Questo progetto è una piattaforma Node.js/Express per il caricamento e il ridimensionamento automatico di immagini.
+Ho creato questo progetto come piattaforma Node.js/Express per caricare e ridimensionare le immagini in automatico.
 
-Il flusso principale consente di:
+In pratica fa questo:
 
-1. aprire una pagina web (suddivisa nei tab **Tutti i file**, **Foto** e **Video**);
-2. selezionare o trascinare qualsiasi tipo di file (immagini, video, documenti, ecc.);
-3. specificare opzionalmente percorsi (cartelle) personalizzati e un bucket di destinazione;
-4. per le immagini, scegliere se conservare l'originale (o salvarlo in modo esclusivo) e selezionare un numero illimitato di dimensioni di output;
-5. per i video e gli altri file generici, salvarli nel formato originale senza manipolazioni;
-6. salvare i file in un bucket MinIO compatibile S3;
-7. visualizzare nella pagina l'esito e le immagini/video salvati.
+1. apri la pagina web (divisa nei tab **Tutti i file**, **Foto** e **Video**);
+2. selezioni o trascini qualsiasi file ti pare (immagini, video, zip, ecc.);
+3. se vuoi, scegli una cartella specifica e un bucket di destinazione;
+4. per le immagini, puoi decidere se tenere l'originale (o salvare solo quello) e puoi generare quante dimensioni vuoi;
+5. per i video e gli altri file, li salva così come sono senza toccarli;
+6. butta tutto su un bucket MinIO compatibile con S3;
+7. ti fa vedere il risultato e i file salvati direttamente in pagina.
 
-L'idea funzionale prende spunto dall'estensione Firebase **Storage Resize Images**, ma non integra Firebase e non contiene il codice dell'estensione. Il progetto replica solamente il comportamento generale di elaborazione e archiviazione delle immagini, adattandolo a Express, Sharp e MinIO.
+L'idea mi è venuta guardando l'estensione Firebase **Storage Resize Images**, ma qui non c'è traccia di Firebase o del loro codice. Ho solo replicato il modo in cui gestiscono e archiviano le immagini, rifacendo tutto con Express, Sharp e MinIO.
 
 ---
 
@@ -29,9 +29,9 @@ L'idea funzionale prende spunto dall'estensione Firebase **Storage Resize Images
 - **Helmet**: intestazioni HTTP di sicurezza e Content Security Policy.
 - **CORS**: gestione delle richieste cross-origin.
 - **dotenv**: caricamento delle variabili dal file `.env`.
-- **PostgreSQL e Redis**: componenti predisposti per funzionalità aggiuntive, non necessari per il flusso web principale.
+- **PostgreSQL e Redis**: li ho già predisposti per funzionalità aggiuntive (tipo i worker o db relazionale), ma non servono per il flusso web base.
 
-Il file `public/index.php` è in realtà HTML con JavaScript e CSS incorporati. Non viene eseguito da PHP: Express lo invia come pagina HTML.
+Ah, una nota: il file `public/index.php` in realtà è puro HTML con JS e CSS dentro. Non lo esegue PHP, ma lo sputa fuori direttamente Express come pagina statica.
 
 ---
 
@@ -90,20 +90,20 @@ resize-images/
 
 ### 3.1 `server.js`
 
-È il punto di ingresso dell'applicazione.
+Questo è l'entry point dell'app.
 
-Le sue responsabilità sono:
+Cosa fa in soldoni:
 
-- caricare `.env` con `dotenv`;
-- creare l'applicazione Express;
-- attivare Helmet;
-- attivare CORS;
-- abilitare il parsing JSON;
-- servire la pagina principale su `/`;
-- servire eventuali file locali su `/saved-images`;
-- registrare le route API;
-- esporre `/health`;
-- ascoltare sulla porta definita da `PORT`.
+- carica il `.env` tramite `dotenv`;
+- tira su l'app Express;
+- attiva Helmet per un po' di sicurezza base;
+- abilita i CORS;
+- parsa il JSON in ingresso;
+- serve la pagina principale sulla route `/`;
+- serve i file locali su `/saved-images` (se si usa storage locale);
+- registra tutte le route delle API;
+- espone l'endpoint `/health`;
+- si mette in ascolto sulla porta che ho definito in `PORT`.
 
 La porta configurata normalmente è `3003`.
 
@@ -132,7 +132,7 @@ Risposta di esempio:
 
 ## 4. Configurazione MinIO
 
-Nel progetto il file `.env` è configurato per usare MinIO:
+Di default ho impostato il `.env` per usare MinIO locale:
 
 ```env
 STORAGE_TYPE=minio
@@ -677,20 +677,19 @@ Non sono stati copiati:
 
 L'estensione Firebase lavora in modo event-driven: il caricamento nel bucket genera un evento e una funzione in background esegue il resize.
 
-Questo progetto lavora invece in modo sincrono:
+Questo progetto lavora invece in modo sincrono (almeno per ora):
 
 ```text
 browser -> Express -> Multer -> Sharp -> MinIO -> risposta HTTP
 ```
 
-Di conseguenza:
+Questo significa che:
 
-- il browser aspetta la fine dell'elaborazione;
-- non serve un trigger esterno;
-- non serve Firebase;
-- non serve Cloud Functions;
-- l'applicazione può essere eseguita localmente;
-- un errore durante il resize viene restituito direttamente alla richiesta.
+- il browser aspetta che finisca tutto il giro;
+- non mi serve un trigger S3 esterno;
+- addio dipendenza da Firebase o Cloud Functions;
+- gira tutto in locale sul mio PC o server;
+- se c'è un errore, lo sparo subito in faccia al client.
 
 L'estensione Firebase supporta inoltre molte opzioni avanzate che qui non sono ancora implementate, tra cui:
 
@@ -708,39 +707,36 @@ Questo progetto implementa il nucleo richiesto: upload, resize multiplo, naming 
 
 ---
 
-## 15. Stato attuale e limiti tecnici
+## 15. Cose da sistemare / Limiti attuali
 
-Il flusso web principale è operativo, ma prima di un uso pubblico o di produzione andrebbero affrontati questi punti:
+Il grosso funziona alla grande, ma prima di metterlo in produzione vera ci sono un paio di robe da smarcare:
 
-1. le credenziali e i secret non sono committati;
-2. l'upload dovrebbe avere autenticazione, rate limiting e quote;
-3. CORS dovrebbe essere limitato ai domini autorizzati;
-4. il contenuto reale del file dovrebbe essere verificato oltre al MIME dichiarato;
-5. Sharp dovrebbe avere limiti sul numero totale di pixel per evitare richieste eccessive;
-6. il nome senza UUID può causare sovrascritture;
-7. sarebbe utile una strategia di cleanup se una variante fallisce a metà;
-8. il bucket dovrebbe avere policy e permessi espliciti;
-9. il login e i worker dovrebbero essere completati prima di attivare le funzioni collegate;
-10. servono test automatici per upload, validazione, resize, naming e storage;
-11. occorre uniformare il filtro di `middlewares/upload.js` con quello della route, oppure rimuovere il middleware duplicato;
-12. servono migrazioni PostgreSQL se si vogliono usare i modelli e i job persistenti.
+1. togliere credenziali e secret dai commit (ovvio);
+2. aggiungere un rate limiting o quote sugli upload;
+3. limitare i CORS solo ai domini che mi servono;
+4. controllare i magic byte dei file, fidarsi solo del MIME type non è il massimo;
+5. mettere un limite massimo ai pixel su Sharp, altrimenti mi tirano giù il server con immagini giganti;
+6. il naming così com'è (senza UUID) rischia sovrascritture, magari andrebbe gestito;
+7. serve un cleanup intelligente se la generazione di una variante si spacca a metà;
+8. blindare il bucket con policy e permessi giusti;
+9. finire la parte di login e worker prima di abilitarli;
+10. scrivere due test automatici su upload, validazione e storage;
+11. sistemare il middleware duplicato per l'upload (`middlewares/upload.js` contro la route);
+12. fare le migrazioni su PostgreSQL se decidiamo di accendere i job persistenti.
 
 ---
 
-## 16. Riassunto operativo
+## 16. Recap per farlo girare
 
-Per usare il progetto:
+Riassumendo, per accendere tutto:
 
-1. avvia MinIO e crea il bucket `savedimages`;
-2. verifica endpoint e credenziali in `.env`;
-3. esegui `npm install`;
-4. esegui `npm start`;
-5. apri `http://localhost:3003`;
-6. scegli un'immagine;
-7. scegli se conservare l'originale;
-8. seleziona le dimensioni preset oppure aggiungi al massimo due dimensioni personalizzate;
-9. avvia l'elaborazione;
-10. verifica gli oggetti nella Console MinIO alla pagina `browser/savedimages`.
+1. tira su MinIO e fai il bucket `savedimages`;
+2. controlla che il `.env` sia a posto;
+3. dai un `npm install`;
+4. accendi con `npm start` (o `npm run dev`);
+5. vai su `http://localhost:3003`;
+6. seleziona la roba da caricare, scegli le dimensioni e via;
+7. controlla sulla console di MinIO se ha caricato giusto.
 
 Il risultato principale è una serie di oggetti con questa convenzione:
 
@@ -754,19 +750,19 @@ L'originale viene salvato alla radice del bucket solo quando è stata selezionat
 
 ## 17. Integrazione API ed Esempi
 
-Il progetto espone endpoint pensati per essere utilizzati da applicazioni esterne. Durante i test, queste API sono state completamente verificate confermando il corretto funzionamento dell'autenticazione, dell'upload (compresi validazione formati e size) e del retrieve delle varianti su MinIO.
+Ho predisposto un po' di endpoint per permettere ad altre app di chiamare il server. Le ho testate per bene, l'upload e il resize vanno senza problemi.
 
 ### 17.1 Generazione API Key
 
-Per generare una chiave, devi chiamare il seguente endpoint:
+Per fare una chiave, chiama questa:
 
 ```text
 POST /api/auth/api-key
 ```
 
-**Nota di Sicurezza:** L'endpoint richiede l'autenticazione. Devi fornire un header `Authorization: Bearer <token>`, dove il token è ottenuto dalla rotta `POST /api/auth/login` (che implementa un'autenticazione basata su HMAC). Inoltre occorre fornire nel body il `name` dell'API Key e opzionalmente il `bucket` a cui sarà autorizzata a scrivere. Se il bucket viene omesso, l'API Key generata non avrà limitazioni di bucket. In questo modo le API non possono generare incontrollatamente altre API.
+**Occhio:** Devi essere loggato come admin. Passa il token nell'header (`Authorization: Bearer <token>`). Il token lo prendi facendo login su `POST /api/auth/login`. Nel body mettici il `name` della chiave e magari il `bucket` a cui può accedere (se salti il bucket, la chiave scrive ovunque).
 
-La risposta in caso di successo (HTTP 201) contiene la chiave in chiaro **una sola volta**:
+La risposta (se va bene) ti fa vedere la chiave in chiaro **solo stavolta**:
 
 ```json
 {
@@ -775,7 +771,7 @@ La risposta in caso di successo (HTTP 201) contiene la chiave in chiaro **una so
 }
 ```
 
-Gli hash SHA-256 (non le chiavi in chiaro) vengono conservati nella tabella `token` del database MySQL, insieme al nome e al bucket autorizzato.
+Lato server mi salvo solo l'hash SHA-256 nel DB MySQL, quindi non perdertela.
 
 ### 17.2 Upload tramite API
 
@@ -915,6 +911,7 @@ Se il file esiste, il backend restituisce il file in stream con il corretto `Con
 
 ---
 
-## 18. Sicurezza delle API key e Considerazioni
+## 18. Sicurezza delle API key e Considerazioni final
 
-Gli hash delle API Key sono salvati all'interno della tabella `token` di un database MySQL dedicato, superando il limite del singolo file JSON locale precedentemente utilizzato. Questo approccio è idoneo sia per ambienti locali che distribuiti, abilitando una migliore gestione (identificativo, bucket autorizzato e data di creazione). La chiave non deve MAI essere inserita nel codice frontend di un'applicazione pubblica (come una web-app in React/Vue esposta all'utente), perché sarebbe visibile e utilizzabile da chiunque per aggirare l'interfaccia: va conservata unicamente lato server. L'endpoint di generazione `POST /api/auth/api-key` ora impedisce agli attaccanti di creare ulteriori chiavi, blindando efficacemente l'uso del servizio.
+Alla fine ho spostato gli hash delle API Key sulla tabella `token` in MySQL. Il file JSON locale che usavo prima era una roba troppo limitata. Adesso regge pure se lo faccio girare su più istanze e posso gestire meglio bucket e nomi. 
+Mi raccomando: la chiave non va MAI messa nel frontend in chiaro (tipo in una web app React). Tienila sempre lato backend, sennò chiunque te la becca e ti riempie il bucket. Inoltre l'endpoint per generare le chiavi (`POST /api/auth/api-key`) l'ho chiuso per evitare che gente a caso si crei chiavi all'infinito.

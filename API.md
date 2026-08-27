@@ -1,63 +1,42 @@
-# API Reference - Image Resize (Windows + MinIO)
+# API Reference - Image Resize
 
-Documentazione completa delle API REST esposte dal server Image Resize.
+Ecco tutta la documentazione delle API REST del server per il resize.
 
 ## Base URL
 
-### Ambiente locale
-
+In locale, il server gira qui:
 ```text
 http://localhost:3003
 ```
-
-### Ambiente produzione
-
-```text
-https://tuodominio.it
-```
+In produzione, andrà ovviamente sul tuo dominio.
 
 ---
 
 # Autenticazione
 
-Il sistema utilizza due modalità di autenticazione.
+Ho impostato due modi per autenticarsi:
 
 ## 1. Token Admin
 
-Utilizzato esclusivamente per:
+Questo serve solo per la gestione, tipo loggarsi, creare o piallare le API Key, e vedere cosa c'è nel bucket MinIO da pannello admin.
 
-- Login amministratore
-- Creazione API Key
-- Eliminazione API Key
-- Visualizzazione API Key
-- Lettura bucket MinIO
-
-Header richiesto:
-
+Header da mandare:
 ```http
 Authorization: Bearer <TOKEN_ADMIN>
 ```
 
-Il token viene ottenuto tramite:
-
-```http
-POST /api/auth/login
-```
-
----
+Il token lo prendi facendo una chimata di login a `/api/auth/login`.
 
 ## 2. API Key
 
-Utilizzata per il caricamento dei file.
+Questa è quella che serve per l'upload vero e proprio dei file.
+La puoi mandare in due modi, a preferenza:
 
-Può essere inviata in uno dei due modi:
-
+Come header custom:
 ```http
 x-api-key: imgf_xxxxxxxxxxxxxxxxx
 ```
-
-oppure
-
+Oppure nel Bearer classico:
 ```http
 Authorization: Bearer imgf_xxxxxxxxxxxxxxxxx
 ```
@@ -66,22 +45,17 @@ Authorization: Bearer imgf_xxxxxxxxxxxxxxxxx
 
 # Health Check
 
+Se vuoi solo controllare se il server è vivo:
+
 ## GET /health
 
-Verifica che il server sia operativo.
-
-### Autenticazione
-
-Nessuna.
-
-### Esempio
+Nessuna auth richiesta.
 
 ```powershell
 curl http://localhost:3003/health
 ```
 
-### Risposta
-
+Ti risponde così se è tutto ok:
 ```json
 {
   "status": "ok",
@@ -95,16 +69,14 @@ curl http://localhost:3003/health
 
 ## POST /api/auth/login
 
-Effettua l'accesso come amministratore e restituisce il token di autenticazione.
+Ti fai dare il token.
 
-### Header
-
+Header:
 ```http
 Content-Type: application/json
 ```
 
-### Body
-
+Body:
 ```json
 {
   "username": "admin",
@@ -112,228 +84,83 @@ Content-Type: application/json
 }
 ```
 
-### Risposta 200
-
+Se va bene (200), ti torna:
 ```json
 {
   "token": "a3f8c1..."
 }
 ```
-
-### Risposta 401
-
-```json
-{
-  "error": "Credenziali non valide"
-}
-```
-
-### Esempio PowerShell
-
-```powershell
-curl.exe -X POST http://localhost:3003/api/auth/login `
-  -H "Content-Type: application/json" `
-  -d "{\"username\":\"admin\",\"password\":\"LA_TUA_PASSWORD\"}"
-```
+Altrimenti (401) becchi un errore sulle credenziali.
 
 ---
 
-# API Keys
+# Gestione API Keys
 
 ## POST /api/auth/api-key
 
-Genera una nuova API Key.
+Sei loggato da admin e vuoi creare una nuova chiave per un progetto? Usa questa rotta.
+Ricorda di mandare il `TOKEN_ADMIN` nell'header.
 
-### Autenticazione
-
-```http
-Authorization: Bearer <TOKEN_ADMIN>
-```
-
-### Body
-
+Body:
 ```json
 {
   "name": "Progetto X",
   "bucket": "savedimages"
 }
 ```
-*Nota: se `bucket` non viene fornito o impostato su `*`, la chiave generata non avrà limitazioni di bucket.*
+*Nota: se salti il parametro `bucket` o passi `*`, la chiave che ti sputa fuori non avrà limiti e potrà scrivere in qualsiasi bucket.*
 
-### Risposta 201
-
+Risposta (201):
 ```json
 {
   "apiKey": "imgf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
   "uploadEndpoint": "/api/files/upload-api"
 }
 ```
-
-> La chiave viene mostrata una sola volta. Successivamente sarà salvato solo il suo hash SHA256.
-
-### Esempio PowerShell
-
-```powershell
-curl.exe -X POST http://localhost:3003/api/auth/api-key `
-  -H "Authorization: Bearer TOKEN_ADMIN" `
-  -H "Content-Type: application/json" `
-  -d "{\"name\":\"Progetto X\",\"bucket\":\"savedimages\"}"
-```
-
----
+> **Occhio**: te la mostro in chiaro solo in questo momento. Lato DB mi salvo solo l'hash SHA-256, quindi se la perdi devi rifarla.
 
 ## GET /api/auth/api-keys
-
-Restituisce tutte le API Key registrate.
-
-### Autenticazione
-
-```http
-Authorization: Bearer <TOKEN_ADMIN>
-```
-
-### Esempio
-
-```powershell
-curl.exe http://localhost:3003/api/auth/api-keys `
-  -H "Authorization: Bearer TOKEN_ADMIN"
-```
-
-### Risposta
-
-```json
-{
-  "keys": [
-    {
-      "hash": "a3f8c1...",
-      "name": "Progetto X",
-      "bucket": "savedimages",
-      "createdAt": "2026-08-25T10:00:00.000Z"
-    }
-  ]
-}
-```
-
----
+Lista di tutte le chiavi (ovviamente serve auth da admin).
+Ti torna un array con le varie info (quando l'ho creata, che bucket usa, l'hash ecc.).
 
 ## DELETE /api/auth/api-key/{hash}
-
-Elimina una API Key.
-
-### Autenticazione
-
-```http
-Authorization: Bearer <TOKEN_ADMIN>
-```
-
-### Esempio
-
-```powershell
-curl.exe -X DELETE http://localhost:3003/api/auth/api-key/a3f8c1... `
-  -H "Authorization: Bearer TOKEN_ADMIN"
-```
-
-### Risposta
-
-```json
-{
-  "message": "Chiave eliminata"
-}
-```
+Pialla una chiave. Manda l'hash e fine (auth da admin).
 
 ---
 
-# Bucket MinIO
+# Upload File 🚀
 
-## GET /api/files/buckets
-
-Restituisce la lista dei bucket disponibili.
-
-### Autenticazione
-
-```http
-Authorization: Bearer <TOKEN_ADMIN>
-```
-
-### Esempio
-
-```powershell
-curl.exe http://localhost:3003/api/files/buckets `
-  -H "Authorization: Bearer TOKEN_ADMIN"
-```
-
-### Risposta
-
-```json
-{
-  "buckets": [
-    "savedimages"
-  ]
-}
-```
-
----
-
-# Upload File
+La parte succosa. Qui carichiamo le immagini, i video o quello che ci pare.
 
 ## POST /api/files/upload-api
 
-Carica immagini, video o qualsiasi altro tipo di file su MinIO.
-
-### Autenticazione
-
+Usa la tua API key in header e imposta:
 ```http
-x-api-key: imgf_xxxxxxxxxxx
+Content-Type: multipart/form-data
 ```
 
-oppure
+Questi sono i parametri che gestisco:
 
-```http
-Authorization: Bearer imgf_xxxxxxxxxxx
-```
-
-### Content-Type
-
-```http
-multipart/form-data
-```
-
----
-
-## Parametri
-
-| Campo | Obbligatorio | Descrizione |
+| Campo | Obbligatorio? | Che roba è? |
 |----------|----------|----------|
-| file | Sì | File da caricare |
-| sizes | Sì per immagini (se keepOriginal != 'only') | Dimensioni generate |
-| keepOriginal | No | Conserva originale (valori ammessi: 'true', 'false', 'only') |
-| path | No | Percorso originale |
-| resizedPath | No | Percorso varianti (se vuoto `""` salva nella root, altrimenti usa `path`) |
-| bucket | No | Bucket destinazione (default: bucket della API Key) |
+| file | Sì | Il file fisico da caricare |
+| sizes | Dipende | Le misure. Obbligatorio per le foto a meno che non metti keepOriginal='only' |
+| keepOriginal | No | Vuoi tenere l'originale? ('true', 'false', 'only') |
+| path | No | Dove lo salvo (percorso originale) |
+| resizedPath | No | Dove piazzo le varianti (se mandi stringa vuota, vanno nella root) |
+| bucket | No | Il bucket (sennò usa quello legato all'API Key) |
 
----
+### Come gestisco i file
+Accetto di tutto. Poi internamente il backend fa questo:
+- **Immagini**: fa il resize se richiesto.
+- **Video**: non li tocca, li salva sotto `videos/` o nel path che hai chiesto.
+- **Altro**: lo salva in `files/` o nel tuo path senza farci nulla.
 
-## Formati supportati
+### Limiti e Duplicati
+- Non ci sono limiti di peso imposti a codice. Vai sereno.
+- Se carichi un file (o viene generata una variante) con un nome che esiste già nel bucket... **viene sovrascritto** brutalmente, senza errori. L'ho fatto apposta per rimpiazzare vecchie versioni al volo.
 
-Tutti i formati di file sono supportati. Il server categorizza automaticamente:
-- **Immagini** (vengono ridimensionate se specificato)
-- **Video** (salvati nella cartella `videos/` o nel percorso personalizzato)
-- **Tutti gli altri file** (salvati nella cartella `files/` o nel percorso personalizzato)
-
----
-
-## Limiti
-
-### Dimensioni e Peso
-Nessun limite. Il server e l'interfaccia accettano file di qualsiasi dimensione (peso) e permettono di generare un numero illimitato di varianti.
-
-### Duplicati
-Se un file o un'immagine con lo stesso nome è già presente nel bucket (o viene generato con lo stesso nome della variante), questo **verrà automaticamente sovrascritto** senza restituire errori. Questo permette di rimpiazzare vecchie versioni dei file con facilità.
-
----
-
-## Esempio Upload PowerShell
-
+### Esempio di upload bello massiccio (PowerShell)
 ```powershell
 curl.exe -X POST `
   -H "x-api-key: imgf_TUA_CHIAVE" `
@@ -343,14 +170,10 @@ curl.exe -X POST `
   -F "sizes=800x600" `
   -F "path=mie_foto/originali" `
   -F "resizedPath=mie_foto/ridimensionate" `
-  -F "bucket=il_mio_bucket" `
   http://localhost:3003/api/files/upload-api
 ```
 
----
-
-## Risposta Immagine con Originale
-
+La risposta in questo caso (con originale tenuto):
 ```json
 {
   "original": "foto.jpg",
@@ -365,326 +188,70 @@ curl.exe -X POST `
 
 ---
 
-## Risposta Solo Varianti
-
-```json
-{
-  "original": null,
-  "keepOriginal": false,
-  "variants": [
-    "thumbs/foto_200x200.jpg"
-  ],
-  "message": "Immagine salvata solo nelle versioni modificate"
-}
-```
-
----
-
-## Risposta Video
-
-```json
-{
-  "original": "videos/video.mp4",
-  "keepOriginal": true,
-  "variants": [],
-  "message": "Video salvato"
-}
-```
-
----
-
-## Errore API Key
-
-```json
-{
-  "error": "API key non valida"
-}
-```
-
----
-
-
-
-# Gestione File (Tramite API Key)
+# Leggere/Piallare File da MinIO (sempre via API)
 
 ## GET /api/files/list/{bucket}
-
-Restituisce l'elenco dei file presenti in un determinato bucket. L'API Key deve avere accesso a quel bucket o essere globale (`*`).
-
-### Autenticazione
-
-```http
-x-api-key: <TUA_API_KEY>
-```
-
-### Esempio di Risposta
-```json
-{
-  "files": [
-    { "Key": "foto.jpg" },
-    { "Key": "videos/clip.mp4" }
-  ]
-}
-```
-
----
+Ti fai dare la lista dei file dentro al bucket (usando un'API key autorizzata per quel bucket).
 
 ## DELETE /api/files/object/{bucket}/{chiave}
-
-Elimina fisicamente un file da MinIO.
-
-### Autenticazione
-
-```http
-x-api-key: <TUA_API_KEY>
-```
-
-### Risposta
-
-```json
-{
-  "success": true
-}
-```
-
----
-
-# Recupero File
+Cestina fisicamente un file da MinIO.
 
 ## GET /api/files/object/{chiave}
+Usa questa per leggere i file direttamente (le immagini generate). Nessuna auth richiesta, perfetta per i tag `<img src="...">`.
 
-Restituisce un file presente su MinIO.
-
-### Parametri Opzionali
-- `?bucket={nome_bucket}` (Se non fornito, viene usato il bucket predefinito)
-
-### Autenticazione
-
-Non richiesta.
-
-### Esempio
-
+Esempio:
 ```text
 http://localhost:3003/api/files/object/thumbs/foto_200x200.jpg?bucket=savedimages
 ```
 
-### Utilizzo HTML
-
-```html
-<img
-  src="http://localhost:3003/api/files/object/thumbs/foto_200x200.jpg"
-  alt="Anteprima">
-```
-
-### Risposta d'Errore
-
-```json
-{
-  "error": "File non trovato"
-}
-```
-
 ---
 
-# Esempio Node.js
+# Integrazione: come la chiamo dal codice?
 
+### Node.js (Axios)
 ```javascript
 const axios = require('axios');
 const FormData = require('form-data');
 const fs = require('fs');
 
-async function uploadImage() {
-  const form = new FormData();
+const form = new FormData();
+form.append('file', fs.createReadStream('foto.jpg'));
+form.append('keepOriginal', 'true');
+form.append('sizes', '200x200');
 
-  form.append('file', fs.createReadStream('foto.jpg'));
-  form.append('keepOriginal', 'true');
-  form.append('sizes', '200x200');
-  form.append('sizes', '800x600');
-
-  const response = await axios.post(
-    'http://localhost:3003/api/files/upload-api',
-    form,
-    {
-      headers: {
-        ...form.getHeaders(),
-        'x-api-key': 'imgf_TUA_CHIAVE'
-      }
-    }
-  );
-
-  console.log(response.data);
-}
-
-uploadImage();
+const res = await axios.post('http://localhost:3003/api/files/upload-api', form, {
+  headers: { ...form.getHeaders(), 'x-api-key': 'imgf_TUA_CHIAVE' }
+});
+console.log(res.data);
 ```
 
----
-
-# Esempio Python
-
+### Python (Requests)
 ```python
 import requests
 
-url = "http://localhost:3003/api/files/upload-api"
-
-headers = {
-    "x-api-key": "imgf_TUA_CHIAVE"
-}
-
 with open("foto.jpg", "rb") as file:
-    response = requests.post(
-        url,
-        headers=headers,
+    res = requests.post(
+        "http://localhost:3003/api/files/upload-api",
+        headers={"x-api-key": "imgf_TUA_CHIAVE"},
         files={"file": file},
-        data={
-            "keepOriginal": "true",
-            "sizes": ["200x200", "800x600"]
-        }
+        data={"keepOriginal": "true", "sizes": ["200x200"]}
     )
-
-print(response.json())
+print(res.json())
 ```
 
 ---
 
-# Esempio PHP
+# Varie ed eventuali
 
-```php
-<?php
+## Come passo le dimensioni?
+Mettici sempre `LxA`, es. `200x200`. Il backend usa l'opzione "inside", quindi mantiene le proporzioni senza deformarti l'immagine.
 
-$ch = curl_init();
+## Naming dei file salvati
+- Le varianti le chiamo `thumbs/NomeFile_200x200.jpg`.
+- L'originale rimane col suo nome `NomeFile.jpg`.
+- I video vanno tipo in `videos/NomeVideo.mp4`.
 
-$cfile = new CURLFile(
-    realpath('foto.jpg'),
-    'image/jpeg',
-    'foto.jpg'
-);
-
-$data = [
-    'file'         => $cfile,
-    'keepOriginal' => 'true',
-    'sizes[0]'     => '200x200',
-    'sizes[1]'     => '800x600'
-];
-
-curl_setopt($ch, CURLOPT_URL, 'http://localhost:3003/api/files/upload-api');
-curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    'x-api-key: imgf_TUA_CHIAVE'
-]);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-$response = curl_exec($ch);
-
-curl_close($ch);
-
-echo $response;
-```
-
----
-
-# Codici HTTP
-
-| Codice | Significato |
-|----------|----------|
-| 200 | Operazione completata |
-| 201 | Risorsa creata |
-| 400 | Parametri non validi |
-| 401 | Non autorizzato |
-| 404 | Risorsa non trovata |
-| 500 | Errore interno server |
-
----
-
-# Formato Dimensioni
-
-Formato richiesto:
-
-```text
-LARGHEZZAxALTEZZA
-```
-
-Esempi:
-
-```text
-200x200
-400x400
-680x680
-800x600
-1024x768
-1920x1080
-```
-
-L'immagine mantiene sempre le proporzioni originali e non viene deformata.
-
----
-
-# Naming Oggetti
-
-## Varianti
-
-```text
-thumbs/NomeFile_200x200.jpg
-```
-
-## Originale
-
-```text
-NomeFile.jpg
-```
-
-oppure
-
-```text
-percorso/NomeFile.jpg
-```
-
-## Video
-
-```text
-videos/NomeVideo.mp4
-```
-
----
-
-# Configurazione Locale Consigliata
-
-### MinIO
-
-```powershell
-.\minio.windows-amd64.RELEASE.2025-09-07T16-13-09Z.exe server data
-```
-
-### Applicazione
-
-```powershell
-npm run dev
-```
-
-### Servizi disponibili
-
-```text
-Applicazione:
-http://localhost:3003
-
-Health Check:
-http://localhost:3003/health
-
-MinIO API:
-http://localhost:9000
-
-MinIO Console:
-http://localhost:9001
-```
-
----
-
-# Sicurezza
-
-- Non inserire mai le API Key nel frontend.
-- Conservare le API Key solo lato server.
-- Conservare il file `.env` fuori dal repository Git.
-- Utilizzare password amministrative robuste.
-- Limitare l'accesso ai bucket MinIO.
-- Conservare soltanto hash SHA256 delle API Key.
+## Security 101
+- Non sparare l'API key sul frontend.
+- Tieni il `.env` fuori dal repo.
+- Il DB per le API keys e l'admin usa password sicure e solo SHA-256 (no cleartext!).

@@ -1,70 +1,67 @@
-# Come eseguire il progetto con Docker
+# Setup con Docker
 
-Questo progetto è predisposto per essere eseguito all'interno di un container Docker. Questo garantisce che l'applicazione funzioni nello stesso modo indipendentemente dall'ambiente in cui viene eseguita, isolando le dipendenze (come Node.js) ed evitando problemi di compatibilità.
+Ho preparato il progetto per girare in un container Docker, così ci togliamo dai piedi i soliti problemi di compatibilità e le dipendenze con Node.js e l'app funziona ovunque allo stesso modo.
 
 ## Prerequisiti
 
-Assicurati di aver installato:
-- [Docker](https://docs.docker.com/get-docker/) sul tuo sistema.
+Serve solo aver installato [Docker](https://docs.docker.com/get-docker/) sulla macchina.
 
-## 1. Costruire l'immagine Docker
+## 1. Build dell'immagine
 
-Prima di poter avviare il container, devi costruire l'immagine Docker dell'applicazione basata sul `Dockerfile` fornito.
-Apri il terminale nella directory radice del progetto e lancia il seguente comando:
+Per prima cosa dobbiamo buildare l'immagine partendo dal `Dockerfile`. Dalla root del progetto lancia:
 
 ```bash
 docker build -t resize-images-platform .
 ```
 
-- `-t resize-images-platform`: Assegna un nome (tag) all'immagine che stiamo creando. In questo caso la chiamiamo `resize-images-platform`.
-- `.`: Indica a Docker che il `Dockerfile` e il contesto della build si trovano nella directory corrente.
+- `-t resize-images-platform`: diamo questo tag (nome) all'immagine, così la ritroviamo facilmente.
+- `.`: prende il contesto dalla cartella corrente.
 
-## 2. Avviare il container
+## 2. Avvio del container
 
-Poiché il container Docker è isolato dal tuo computer, se l'applicazione cerca di collegarsi a `localhost` o `127.0.0.1` (ad esempio per MinIO o MySQL), cercherà questi servizi *all'interno del container stesso*, e fallirà.
+Occhio a una cosa: siccome il container è isolato, se l'app cerca di puntare a `localhost` o `127.0.0.1` (tipo per connettersi a MinIO o MySQL sull'host), cercherà dentro al container stesso e crasherà.
 
-Per risolvere questo problema, è stato preparato un file `.env.docker` in cui gli indirizzi `localhost` e `127.0.0.1` sono stati sostituiti con `host.docker.internal`, che è un indirizzo speciale fornito da Docker Desktop per permettere al container di comunicare con il tuo sistema host Windows.
+Per risolvere, ho già creato il file `.env.docker` dove al posto di `localhost` c'è `host.docker.internal`. Questo è un indirizzo speciale di Docker Desktop che permette al container di vedere l'host di Windows.
 
-Una volta creata l'immagine, puoi avviare il container con il seguente comando:
+Per tirare su il container:
 
 ```bash
 docker run -p 3003:3003 --env-file .env.docker -d resize-images-platform
 ```
 
-### Spiegazione dei parametri:
-- `-p 3003:3003`: Mappa la porta 3003 del tuo computer alla porta 3003 all'interno del container. Il primo numero è la porta host (quella da cui accederai all'app), il secondo è la porta del container (dove gira l'app internamente).
-- `--env-file .env.docker`: Indica a Docker di leggere le variabili d'ambiente dal file `.env.docker` che contiene l'host corretto (`host.docker.internal`) per i servizi esterni.
-- `-d`: Avvia il container in modalità "detached", ovvero in background. Il terminale rimarrà libero.
-- `resize-images-platform`: È il nome dell'immagine che abbiamo costruito nel passaggio precedente.
+I parametri al volo:
+- `-p 3003:3003`: mappa la porta 3003 dell'host con la 3003 del container.
+- `--env-file .env.docker`: gli passiamo le variabili d'ambiente col fix per l'host.
+- `-d`: lo facciamo girare in background (detached).
+- `resize-images-platform`: l'immagine che abbiamo appena buildato.
 
-## 3. Verificare che l'applicazione sia in esecuzione
+## 3. Check che tutto vada
 
-Puoi visualizzare l'elenco dei container attualmente in esecuzione con il comando:
+Per vedere i container attivi:
 ```bash
 docker ps
 ```
 
-Per testare se il server risponde correttamente, puoi usare il browser all'indirizzo `http://localhost:3003` oppure chiamare la rotta di health da terminale:
+Per testare se il server è su, apri `http://localhost:3003` dal browser oppure fai una curl sulla rotta di health:
 ```bash
 curl http://localhost:3003/health
 ```
 
-## 4. Visualizzare i log del container
+## 4. Log
 
-Se hai bisogno di vedere i log dell'applicazione (utile per il debugging o per vedere le stampe di `console.log`), usa il comando:
+Se ti serve debuggare o vedere i `console.log`:
 ```bash
-docker logs <ID_DEL_CONTAINER>
+docker logs <CONTAINER_ID>
 ```
-Sostituisci `<ID_DEL_CONTAINER>` con l'ID reale del container ottenuto eseguendo `docker ps` (basta indicare i primi caratteri dell'ID o il nome generato automaticamente).
-Per seguire i log in tempo reale aggiungi `-f` (follow):
+Trovi l'ID facendo `docker ps`. Se vuoi seguire i log in tempo reale (stile tail), aggiungi `-f`:
 ```bash
-docker logs -f <ID_DEL_CONTAINER>
+docker logs -f <CONTAINER_ID>
 ```
 
-## 5. Fermare il container
+## 5. Stop del container
 
-Per fermare l'esecuzione del container:
+Per fermarlo:
 ```bash
-docker stop <ID_DEL_CONTAINER>
+docker stop <CONTAINER_ID>
 ```
-Questo comando invia un segnale di arresto al container. Per rimuovere completamente il container dopo averlo fermato, puoi usare `docker rm <ID_DEL_CONTAINER>`.
+Se poi vuoi proprio piallarlo via, dai un `docker rm <CONTAINER_ID>`.
