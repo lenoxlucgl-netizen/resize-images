@@ -20,7 +20,7 @@ Serve solo aver installato [Docker](https://docs.docker.com/get-docker/) (Docker
 
 ## 1. Avvio di tutto l'ambiente (Consigliato su Windows)
 
-Il modo più veloce e ignorante per accendere tutto è fare **doppio click sul file `avvia_tutto.bat`** che si trova nella cartella del progetto.
+Il modo più veloce per accendere tutto è realizzare un file `avvia_tutto.bat` che si trova nella cartella del progetto.
 
 In alternativa, da terminale (dalla root del progetto), lancia:
 ```bash
@@ -28,10 +28,6 @@ docker compose up -d --build
 ```
 
 Tutti i servizi saranno già correttamente configurati per parlarsi tra di loro!
-
-**Credenziali di Default per il Login Web:**
-- Username: `admin`
-- Password: `0dPw16X22k2t2C.`
 
 **Credenziali MinIO Console Web (su localhost:9001):**
 - Username: `minioadmin`
@@ -44,7 +40,7 @@ Per vedere i container attivi:
 docker compose ps
 ```
 
-Per testare se il server è su, apri `http://localhost:3003` dal browser oppure fai una curl sulla rotta di health:
+Per testare se il server è funzionante, apri `http://localhost:3003` dal browser oppure fai una curl sulla rotta di health:
 ```bash
 curl http://localhost:3003/health
 ```
@@ -77,3 +73,6 @@ Se vuoi piallare via tutto definitivamente, **inclusi i dati** (database e immag
 ```bash
 docker compose down -v
 ```
+## 5. Altra Modalità
+
+Ultilizzare l'app desktop dopo aver generato il Containers premendo il pulsante opportuno per avviare e chiudere.
