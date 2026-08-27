@@ -1,6 +1,0 @@
-# Task Completati
-
-1. L'enviroment non si trova più direttamente nel file docker-compose, ora il docker-compose richiama tutto tramite il file `env.docker`.
-2. Il servizio Redis è stato indagato ed implementato. Abbiamo stabilito che NON viene creato da MinIO, quindi lo abbiamo creato e avviato noi da zero aggiungendolo al docker-compose in modo che sia pronto.
-3. Le cartelle `minio_data` e `mysql_data` sono state assicurate ed esposte visibilmente nella root del progetto tramite Bind Mounts.
-4. Aggiunto il servizio phpMyadmin (porta 8080) per navigare agilmente il DB mysql.
