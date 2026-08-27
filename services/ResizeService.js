@@ -9,7 +9,7 @@ class ResizeService {
     const results = [];
     const originalDimension = `${metadata.width}x${metadata.height}`;
 
-    const finalResizedPath = resizedPath !== null && resizedPath !== '' ? resizedPath : originalPath;
+    const finalResizedPath = resizedPath !== null ? resizedPath : originalPath;
 
     for (const size of sizes) {
       const [width, height] = size.split('x').map(Number);

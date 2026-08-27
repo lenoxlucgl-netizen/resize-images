@@ -308,7 +308,7 @@ multipart/form-data
 | sizes | Sì per immagini (se keepOriginal != 'only') | Dimensioni generate |
 | keepOriginal | No | Conserva originale (valori ammessi: 'true', 'false', 'only') |
 | path | No | Percorso originale |
-| resizedPath | No | Percorso varianti |
+| resizedPath | No | Percorso varianti (se vuoto `""` salva nella root, altrimenti usa `path`) |
 | bucket | No | Bucket destinazione (default: bucket della API Key) |
 
 ---
@@ -341,6 +341,9 @@ curl.exe -X POST `
   -F "keepOriginal=true" `
   -F "sizes=200x200" `
   -F "sizes=800x600" `
+  -F "path=mie_foto/originali" `
+  -F "resizedPath=mie_foto/ridimensionate" `
+  -F "bucket=il_mio_bucket" `
   http://localhost:3003/api/files/upload-api
 ```
 

@@ -69,6 +69,8 @@ class StorageController {
 
       const { variants, originalDimension } = await ResizeService.processImage(req.file.buffer, cleanName, bucket, sizes, customPath, customResizedPath);
       
+      const ext = cleanName.substring(cleanName.lastIndexOf('.') + 1);
+      const baseName = cleanName.substring(0, cleanName.lastIndexOf('.'));
       const originalFinalKey = customPath ? `${customPath}/${baseName}-${originalDimension}.${ext}` : `${baseName}-${originalDimension}.${ext}`;
 
       if (keepOriginal) {

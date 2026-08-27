@@ -77,7 +77,7 @@ MINIO_BUCKET=savedimages
 
 RESIZE_SIZES=200x200,400x400,680x680
 KEEP_ORIGINAL=true
-RESIZED_PATH=/thumbs
+RESIZED_PATH=/thumbs # Lasciare vuoto per salvare le varianti nella root
 
 
 ---

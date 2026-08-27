@@ -173,7 +173,7 @@ Offre tre tab principali: **Tutti i file**, **Foto** e **Video**.
 **Tab Foto**:
 - selezione file dal browser o drag-and-drop (con validazione per accettare solo immagini);
 - nessun limite massimo di dimensione o peso;
-- opzioni per specificare il *Percorso Originale* e il *Percorso Modificate* nel bucket;
+- opzioni per specificare il *Percorso Originale* e il *Percorso Modificate* nel bucket (se il percorso modificate viene inviato vuoto `""`, salva nella root);
 - scelta tra conservare l'originale, conservare modificate + originale, o **Solo originale** (ignora le dimensioni e salva il file intero);
 - tre dimensioni predefinite, ma con la possibilità di aggiungere **infinite** dimensioni personalizzate;
 - messaggi di avanzamento o errore (incluso errore 409 se l'immagine è già presente per evitare duplicati);
@@ -819,6 +819,9 @@ async function uploadImage() {
   form.append('keepOriginal', 'true');
   form.append('sizes', '200x200');
   form.append('sizes', '800x600');
+  form.append('path', 'mie_foto/originali');
+  form.append('resizedPath', 'mie_foto/ridimensionate');
+  form.append('bucket', 'il_mio_bucket');
 
   try {
     const response = await axios.post('http://localhost:3003/api/files/upload-api', form, {
@@ -848,7 +851,10 @@ with open("test.jpg", "rb") as f:
     files = {"file": f}
     data = {
         "keepOriginal": "true",
-        "sizes": ["200x200", "800x600"]
+        "sizes": ["200x200", "800x600"],
+        "path": "mie_foto/originali",
+        "resizedPath": "mie_foto/ridimensionate",
+        "bucket": "il_mio_bucket"
     }
     
     response = requests.post(url, headers=headers, files=files, data=data)
@@ -866,7 +872,10 @@ $data = array(
     'file' => $cfile,
     'keepOriginal' => 'true',
     'sizes[0]' => '200x200',
-    'sizes[1]' => '800x600'
+    'sizes[1]' => '800x600',
+    'path' => 'mie_foto/originali',
+    'resizedPath' => 'mie_foto/ridimensionate',
+    'bucket' => 'il_mio_bucket'
 );
 
 curl_setopt($ch, CURLOPT_URL, "http://localhost:3003/api/files/upload-api");
