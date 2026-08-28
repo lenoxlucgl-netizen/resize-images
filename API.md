@@ -197,9 +197,13 @@ Ti fai dare la lista dei file dentro al bucket (usando un'API key autorizzata pe
 Cestina fisicamente un file da MinIO.
 
 ## GET /api/files/object/{chiave}
-Usa questa per leggere i file direttamente (le immagini generate). Nessuna auth richiesta, perfetta per i tag `<img src="...">`.
+Usa questa per leggere o visualizzare un file (prodotto) specifico direttamente. 
+L'ho pensata apposta per essere aperta: **nessuna auth richiesta**. È perfetta per essere usata direttamente nei tag HTML del tuo frontend (tipo `<img src="...">` o `<video src="...">`).
 
-Esempio:
+Basta passare la `{chiave}` esatta del file (il percorso completo con cui l'ho salvato, es. `thumbs/foto_200x200.jpg`).
+Se il file non si trova nel bucket di default, puoi dirmi dove cercarlo passando `?bucket=nome_del_tuo_bucket`.
+
+Esempio pratico:
 ```text
 http://localhost:3003/api/files/object/thumbs/foto_200x200.jpg?bucket=savedimages
 ```
