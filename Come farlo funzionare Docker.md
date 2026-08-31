@@ -10,7 +10,7 @@ Nel file `docker-compose.yml` ho definito questa struttura:
 1. **Container MySQL**: Usa l'immagine ufficiale di MySQL. Al primissimo avvio, legge il file `init.sql` per creare il database e l'admin. I dati fisici vengono salvati nella cartella `mysql_data` che vedrai comparire fisicamente nel progetto.
 2. **phpMyAdmin**: Ti permette di navigare e smanettare comodamente col database MySQL direttamente dal browser.
 3. **Container MinIO**: È il nostro server per salvare le immagini (il sostituto di S3). Salva i dati direttamente nella cartella `minio_data` nel progetto.
-4. **Container MinIO-Init**: È un container "usa e getta". Si accende solo per qualche secondo, aspetta che MinIO sia pronto, crea in automatico il bucket `savedimages` e gli dà i permessi pubblici, dopodiché si spegne da solo.
+4. **Container MinIO-Init**: È un container "usa e getta". Si accende solo per qualche secondo, aspetta che MinIO sia pronto e crea in automatico il bucket `savedimages`. Inoltre, si occupa in autonomia di configurare le **Policy di sicurezza** di MinIO: chiude l'intero bucket per renderlo privato e apre in sola lettura (download) esclusivamente la cartella `public/`. In questo modo, il sistema gestisce da solo la visibilità dei file senza alcun intervento manuale da parte tua dall'interfaccia, dopodiché il container si spegne.
 5. **Container Redis**: Acceso e pronto all'uso, per ora non lo stiamo usando attivamente nel flusso base Node, ma ce l'abbiamo pronto per eventuali worker o code di eventi future (così evitiamo di doverlo creare a mano dopo).
 6. **Container App (Node.js)**: Costruisce la nostra applicazione, prende tutte le variabili dal file `.env.docker` e si collega agli altri container in modo sicuro tramite la rete interna di Docker.
 

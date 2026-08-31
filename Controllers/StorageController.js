@@ -31,6 +31,8 @@ class StorageController {
         return `${baseUrl}/api/files/private/${uuid}`;
       };
       
+      const prefix = isPublic ? 'public' : 'private';
+
       let customPath = req.body.path ? req.body.path.trim() : '';
       customPath = customPath.replace(/^[\/\\]+/, '').replace(/[\/\\]+$/, ''); // Rimuove slash iniziali/finali
       if (customPath.includes('..')) return res.status(400).json({ error: 'Percorso non valido' });
@@ -46,7 +48,7 @@ class StorageController {
 
       if (!isImage) {
         const folder = req.file.mimetype.startsWith('video/') ? 'videos' : 'files';
-        const fileKey = customPath ? `${customPath}/${cleanName}` : `${folder}/${cleanName}`;
+        const fileKey = customPath ? `${prefix}/${customPath}/${cleanName}` : `${prefix}/${folder}/${cleanName}`;
         await StorageService.uploadFile(bucket, fileKey, req.file.buffer, req.file.mimetype);
         
         const uuid = crypto.randomUUID();
@@ -62,7 +64,7 @@ class StorageController {
       }
 
       if (req.body.keepOriginal === 'only') {
-        const originalFinalKey = customPath ? `${customPath}/${cleanName}` : cleanName;
+        const originalFinalKey = customPath ? `${prefix}/${customPath}/${cleanName}` : `${prefix}/${cleanName}`;
         await StorageService.uploadFile(bucket, originalFinalKey, req.file.buffer, req.file.mimetype);
         
         const uuid = crypto.randomUUID();
@@ -88,7 +90,11 @@ class StorageController {
       }
 
       // Il processo di salvataggio varianti (restituirà path fisici)
-      const { variants: variantKeys, originalDimension } = await ResizeService.processImage(req.file.buffer, cleanName, bucket, sizes, customPath, customResizedPath);
+      const finalCustomPath = customPath ? `${prefix}/${customPath}` : prefix;
+      const finalCustomResizedPath = customResizedPath !== null 
+          ? (customResizedPath ? `${prefix}/${customResizedPath}` : prefix) 
+          : null;
+      const { variants: variantKeys, originalDimension } = await ResizeService.processImage(req.file.buffer, cleanName, bucket, sizes, finalCustomPath, finalCustomResizedPath);
       
       const variantObjs = [];
       for (const vKey of variantKeys) {
@@ -99,7 +105,7 @@ class StorageController {
 
       const ext = cleanName.substring(cleanName.lastIndexOf('.') + 1);
       const baseName = cleanName.substring(0, cleanName.lastIndexOf('.'));
-      const originalFinalKey = customPath ? `${customPath}/${baseName}-${originalDimension}.${ext}` : `${baseName}-${originalDimension}.${ext}`;
+      const originalFinalKey = customPath ? `${prefix}/${customPath}/${baseName}-${originalDimension}.${ext}` : `${prefix}/${baseName}-${originalDimension}.${ext}`;
 
       let originalObj = null;
       if (keepOriginal) {
