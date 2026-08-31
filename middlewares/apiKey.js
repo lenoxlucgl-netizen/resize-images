@@ -10,6 +10,7 @@ module.exports = async (req, res, next) => {
     }
     
     req.authorizedBucket = keyData.bucket;
+    req.apiKeyHash = keyData.hash; // Aggiunto: necessario per StorageController
     next();
   } catch (error) {
     res.status(500).json({ error: 'Impossibile verificare la API key' });

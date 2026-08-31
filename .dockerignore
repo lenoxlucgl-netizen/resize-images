@@ -7,3 +7,6 @@ Dockerfile
 .dockerignore
 saved-images
 *.exe
+mysql_data
+minio_data
+data
