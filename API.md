@@ -193,23 +193,23 @@ La risposta in questo caso (ti restituirà gli **UUID** e i **link diretti** dei
   "bucket": "savedimages",
   "original": {
     "uuid": "550e8400-e29b-41d4-a716-446655440000",
-    "url": "http://localhost:3003/api/files/read/550e8400-e29b-41d4-a716-446655440000?signature=..."
+    "url": "http://localhost:3003/api/files/read/550e8400-e29b-41d4-a716-446655440000"
   },
   "keepOriginal": true,
   "variants": [
     {
       "uuid": "123e4567-e89b-12d3-a456-426614174000",
-      "url": "http://localhost:3003/api/files/read/123e4567-e89b-12d3-a456-426614174000?signature=..."
+      "url": "http://localhost:3003/api/files/read/123e4567-e89b-12d3-a456-426614174000"
     },
     {
       "uuid": "987e6543-e21b-34d5-c678-526614174111",
-      "url": "http://localhost:3003/api/files/read/987e6543-e21b-34d5-c678-526614174111?signature=..."
+      "url": "http://localhost:3003/api/files/read/987e6543-e21b-34d5-c678-526614174111"
     }
   ],
   "message": "Immagine salvata con originali"
 }
 ```
-> **Nota sui Link**: Se hai caricato il file come `isPublic=true`, l'url conterrà già la firma (`signature=...`) per accedervi direttamente (Signed URL). Se invece `isPublic=false`, l'url punterà all'endpoint `/private/` e dovrai sempre fornire l'header `x-api-key` per leggerlo.
+> **Nota sui Link**: Se hai caricato il file come `isPublic=true`, l'url punterà all'endpoint libero senza firma (`/read/{uuid}`). Se invece `isPublic=false`, l'url restituito punterà al nuovo endpoint firmato (`/private-signed/`) includendo la firma (`signature=...`).
 
 ---
 
@@ -222,8 +222,7 @@ Ti fai dare la lista dei file dentro al bucket (usando un'API key autorizzata pe
 Cestina fisicamente un file da MinIO.
 
 ## GET /api/files/signed-url/{uuid}
-Usa questa rotta per generare un **Signed URL** per un file. Devi usare la stessa API Key che ha caricato il file. 
-Il file **deve** essere stato marcato come `isPublic=true` in fase di upload.
+Usa questa rotta per farti restituire dal server l'URL corretto per un file (libero se pubblico, firmato se privato). Devi usare la stessa API Key che ha caricato il file.
 
 Header:
 ```http
@@ -232,19 +231,29 @@ x-api-key: imgf_TUA_CHIAVE
 Risposta (200):
 ```json
 {
-  "url": "http://localhost:3003/api/files/read/550e8400-e29b-41d4...?signature=..."
+  "url": "http://localhost:3003/api/files/private-signed/550e8400-e29b-41d4...?signature=..."
 }
 ```
+*(Se il file è pubblico, l'URL restituito sarà invece `http://localhost:3003/api/files/read/...` senza firma).*
 
 ## GET /api/files/read/{uuid}
-Questa è la rotta pubblica per **scaricare/visualizzare** i file che sono marcati come `isPublic=true`. Non richiede API Key, ma **richiede una firma valida in querystring**.
+Questa è la rotta pubblica per **scaricare/visualizzare** i file che sono marcati come `isPublic=true`. Non richiede API Key e **non richiede più alcuna firma**. È un accesso diretto e libero per le risorse pubbliche.
+
+Esempio pratico:
+```text
+http://localhost:3003/api/files/read/550e8400-e29b-41d4-a716-446655440000
+```
+(Questa è la rotta che userai dentro i tag `<img src="...">` nel tuo frontend per i file pubblici).
+
+## GET /api/files/private-signed/{uuid}
+Questa è la nuova rotta pubblica ma protetta per **scaricare/visualizzare** i file privati (cioè `isPublic=false`). Non richiede API Key in header, ma **richiede una firma valida in querystring**.
 Se l'URL è manomesso, riceverai un `403 Forbidden`.
 
 Esempio pratico:
 ```text
-http://localhost:3003/api/files/read/550e8400-e29b-41d4-a716-446655440000?signature=abc123def456
+http://localhost:3003/api/files/private-signed/550e8400-e29b-41d4-a716-446655440000?signature=abc123def456
 ```
-(Questa è la rotta che userai dentro i tag `<img src="...">` nel tuo frontend).
+*(Questa è la rotta che ti restituisce `generateSignedUrl` quando interroghi un file privato).*
 
 ## GET /api/files/private/{uuid}
 Usa questa per leggere file marcati come `isPublic=false` (o anche quelli pubblici, se preferisci passarci tramite backend).
@@ -307,7 +316,7 @@ Mettici sempre `LxA`, es. `200x200`. Il backend usa l'opzione "inside", quindi m
 
 ## Security 101 & Docker
 - Non sparare l'API key sul frontend.
-- Nessun file può essere letto senza firma (se pubblico) o senza API Key (se privato).
+- Nessun file privato può essere letto senza firma (tramite `/private-signed/`) o senza API Key (tramite `/private/`). I file pubblici invece sono ad accesso libero su `/read/`.
 - Tieni il `.env` fuori dal repo. Lì dentro ora risiede la password `URL_SIGN_SECRET` per generare le firme degli URL, essenziale per la sicurezza.
 - Il DB per le API keys, i log di accesso e i file usa password sicure e gli hash in SHA-256 (no cleartext!).
 - **Docker**: Ho sistemato il `.dockerignore`. Così evitiamo di portarci dietro file inutili o, peggio, database locali (`mysql-data`) ed `.env` quando buildiamo l'immagine. Tutto più pulito e sicuro.
