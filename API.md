@@ -157,7 +157,7 @@ Questi sono i parametri che gestisco:
 | Campo | Obbligatorio? | Che roba è? |
 |----------|----------|----------|
 | file | Sì | Il file fisico da caricare |
-| isPublic | Sì | 'true' o 'false'. Se true, il file sarà accessibile pubblicamente (tramite Signed URL) |
+| isPublic | Sì | 'true' o 'false'. Se true, il file viene salvato nella cartella `public/` ed è accessibile da chiunque (tramite Signed URL o URL diretto MinIO). Se false, va in `private/`. |
 | sizes | Dipende | Le misure. Obbligatorio per le foto a meno che non metti keepOriginal='only' |
 | keepOriginal | No | Vuoi tenere l'originale? ('true', 'false', 'only') |
 | path | No | Dove lo salvo internamente (percorso originale, non verrà esposto) |
@@ -169,6 +169,7 @@ Accetto di tutto. Poi internamente il backend fa questo:
 - **Immagini**: fa il resize se richiesto.
 - **Video**: non li tocca, li salva sotto `videos/` o nel path che hai chiesto.
 - **Altro**: lo salva in `files/` o nel tuo path senza farci nulla.
+- **Sicurezza Pubblico/Privato**: A seconda del valore di `isPublic` (true o false) che passi, il sistema aggiungerà in automatico al percorso di salvataggio il prefisso `public/` o `private/`. I file salvati sotto `public/` diventano visibili (in sola lettura) anche dall'esterno interrogando direttamente MinIO, grazie alle nuove Policy autoconfiguranti.
 
 ### Limiti e Duplicati
 - Non ci sono limiti di peso imposti a codice. Vai sereno.
