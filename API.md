@@ -128,6 +128,19 @@ Pialla una chiave. Manda l'hash e fine (auth da admin).
 
 ---
 
+# Gestione Bucket 🪣
+
+Ho aggiunto un paio di rotte per farti capire quali bucket puoi usare.
+
+## GET /api/files/buckets
+Se sei admin (quindi passi il `TOKEN_ADMIN` in Authorization), ti sputa fuori la lista di tutti i bucket esistenti su MinIO.
+
+## GET /api/files/my-buckets
+Passando la tua **API Key**, questa rotta ti dice in quali bucket hai il permesso di scrivere.
+Se ti torna `"global": true`, significa che puoi scrivere dove ti pare, altrimenti ti torna un array con il singolo bucket a cui sei limitato.
+
+---
+
 # Upload File 🚀
 
 La parte succosa. Qui carichiamo le immagini, i video o quello che ci pare.
@@ -173,19 +186,29 @@ curl.exe -X POST `
   http://localhost:3003/api/files/upload-api
 ```
 
-La risposta in questo caso (ti restituirà gli **UUID** dei file generati):
+La risposta in questo caso (ti restituirà gli **UUID** e i **link diretti** dei file generati):
 ```json
 {
   "bucket": "savedimages",
-  "original": "550e8400-e29b-41d4-a716-446655440000",
+  "original": {
+    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+    "url": "http://localhost:3003/api/files/read/550e8400-e29b-41d4-a716-446655440000?signature=..."
+  },
   "keepOriginal": true,
   "variants": [
-    "123e4567-e89b-12d3-a456-426614174000",
-    "987e6543-e21b-34d5-c678-526614174111"
+    {
+      "uuid": "123e4567-e89b-12d3-a456-426614174000",
+      "url": "http://localhost:3003/api/files/read/123e4567-e89b-12d3-a456-426614174000?signature=..."
+    },
+    {
+      "uuid": "987e6543-e21b-34d5-c678-526614174111",
+      "url": "http://localhost:3003/api/files/read/987e6543-e21b-34d5-c678-526614174111?signature=..."
+    }
   ],
   "message": "Immagine salvata con originali"
 }
 ```
+> **Nota sui Link**: Se hai caricato il file come `isPublic=true`, l'url conterrà già la firma (`signature=...`) per accedervi direttamente (Signed URL). Se invece `isPublic=false`, l'url punterà all'endpoint `/private/` e dovrai sempre fornire l'header `x-api-key` per leggerlo.
 
 ---
 
@@ -279,9 +302,11 @@ Mettici sempre `LxA`, es. `200x200`. Il backend usa l'opzione "inside", quindi m
 - A differenza di prima, non puoi più ricavare il nome del file dal suo percorso originale.
 - Il server ora restituisce **UUID (es. `550e8400...`)** per tutti i file creati, salvando il loro reale posizionamento interno nel Database.
 - Ricordati di salvare questi UUID nel DB del tuo progetto!
+- **Novità:** Ogni file che carichi viene ora associato in modo indissolubile alla tua specifica API Key nel Database. Questo significa che nessuno (tranne te) potrà leggere o cancellare i tuoi file privati, anche se avesse i permessi per lo stesso bucket!
 
-## Security 101
+## Security 101 & Docker
 - Non sparare l'API key sul frontend.
 - Nessun file può essere letto senza firma (se pubblico) o senza API Key (se privato).
 - Tieni il `.env` fuori dal repo. Lì dentro ora risiede la password `URL_SIGN_SECRET` per generare le firme degli URL, essenziale per la sicurezza.
-- Il DB per le API keys e l'admin usa password sicure e solo SHA-256 (no cleartext!).
+- Il DB per le API keys, i log di accesso e i file usa password sicure e gli hash in SHA-256 (no cleartext!).
+- **Docker**: Ho sistemato il `.dockerignore`. Così evitiamo di portarci dietro file inutili o, peggio, database locali (`mysql-data`) ed `.env` quando buildiamo l'immagine. Tutto più pulito e sicuro.
