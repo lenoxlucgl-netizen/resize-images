@@ -64,7 +64,8 @@ router.delete('/object/:bucket/*', apiKey, async (req, res) => {
 
 // Nuove rotte per Signed URL e download
 router.get('/signed-url/:uuid', apiKey, AccessController.generateSignedUrl);
-router.get('/read/:uuid', AccessController.readPublicFile); // Endpoint pubblico ma protetto da firma
+router.get('/read/:uuid', AccessController.readPublicFile); // Endpoint pubblico libero
+router.get('/private-signed/:uuid', AccessController.readPrivateSignedFile);
 router.get('/private/:uuid', apiKey, AccessController.readPrivateFile); // Endpoint privato tramite API Key
 
 module.exports = router;

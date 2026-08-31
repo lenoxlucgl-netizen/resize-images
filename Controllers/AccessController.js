@@ -18,12 +18,17 @@ class AccessController {
         return res.status(403).json({ error: 'Non hai i permessi per generare URL per questo file' });
       }
 
-      if (!file.is_public) {
-        return res.status(400).json({ error: 'Il file non è pubblico, non puoi generare un Signed URL' });
-      }
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      let url;
 
-      const signature = SecurityService.generateSignature(uuid);
-      const url = `${req.protocol}://${req.get('host')}/api/files/read/${uuid}?signature=${signature}`;
+      if (file.is_public) {
+        // File pubblico, url libero senza firma
+        url = `${baseUrl}/api/files/read/${uuid}`;
+      } else {
+        // File privato, url con firma
+        const signature = SecurityService.generateSignature(uuid);
+        url = `${baseUrl}/api/files/private-signed/${uuid}?signature=${signature}`;
+      }
       
       res.json({ url });
     } catch (error) {
@@ -48,10 +53,12 @@ class AccessController {
         return res.status(403).json({ error: 'Accesso non autorizzato al file.' });
       }
 
+      /*
       if (!SecurityService.verifySignature(uuid, signature)) {
         await FileDbService.logAccess({ uuid, ipAddress, status: 'FORBIDDEN_INVALID_SIG' });
         return res.status(403).json({ error: 'Accesso non autorizzato al file.' });
       }
+      */
 
       const object = await StorageService.getFile(file.bucket, file.file_key);
       await FileDbService.logAccess({ uuid, ipAddress, status: 'SUCCESS_PUBLIC' });
@@ -61,6 +68,25 @@ class AccessController {
     } catch (error) {
       await FileDbService.logAccess({ uuid, ipAddress, status: 'ERROR' });
       res.status(500).json({ error: 'Errore durante la lettura del file' });
+    }
+  }
+
+  static async readPrivateSignedFile(req, res) {
+    const { uuid } = req.params;
+    const { signature } = req.query; // Prende la firma dalla query string
+    const ipAddress = req.ip || req.connection?.remoteAddress || 'unknown';
+    try {
+      const file = await FileDbService.getFile(uuid);
+      if (!file) return res.status(404).json({ error: 'File non trovato' });
+      // Controlla che la firma sia valida
+      if (!SecurityService.verifySignature(uuid, signature)) {
+        return res.status(403).json({ error: 'Firma non valida o scaduta.' });
+      }
+      const object = await StorageService.getFile(file.bucket, file.file_key);
+      res.set('Content-Type', object.ContentType || 'application/octet-stream');
+      object.Body.pipe(res);
+    } catch (error) {
+      res.status(500).json({ error: 'Errore interno' });
     }
   }
 
