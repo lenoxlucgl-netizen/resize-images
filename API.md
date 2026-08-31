@@ -144,10 +144,11 @@ Questi sono i parametri che gestisco:
 | Campo | Obbligatorio? | Che roba è? |
 |----------|----------|----------|
 | file | Sì | Il file fisico da caricare |
+| isPublic | Sì | 'true' o 'false'. Se true, il file sarà accessibile pubblicamente (tramite Signed URL) |
 | sizes | Dipende | Le misure. Obbligatorio per le foto a meno che non metti keepOriginal='only' |
 | keepOriginal | No | Vuoi tenere l'originale? ('true', 'false', 'only') |
-| path | No | Dove lo salvo (percorso originale) |
-| resizedPath | No | Dove piazzo le varianti (se mandi stringa vuota, vanno nella root) |
+| path | No | Dove lo salvo internamente (percorso originale, non verrà esposto) |
+| resizedPath | No | Dove piazzo le varianti internamente (non verrà esposto) |
 | bucket | No | Il bucket (sennò usa quello legato all'API Key) |
 
 ### Come gestisco i file
@@ -165,22 +166,22 @@ Accetto di tutto. Poi internamente il backend fa questo:
 curl.exe -X POST `
   -H "x-api-key: imgf_TUA_CHIAVE" `
   -F "file=@foto.jpg" `
+  -F "isPublic=true" `
   -F "keepOriginal=true" `
   -F "sizes=200x200" `
   -F "sizes=800x600" `
-  -F "path=mie_foto/originali" `
-  -F "resizedPath=mie_foto/ridimensionate" `
   http://localhost:3003/api/files/upload-api
 ```
 
-La risposta in questo caso (con originale tenuto):
+La risposta in questo caso (ti restituirà gli **UUID** dei file generati):
 ```json
 {
-  "original": "foto.jpg",
+  "bucket": "savedimages",
+  "original": "550e8400-e29b-41d4-a716-446655440000",
   "keepOriginal": true,
   "variants": [
-    "thumbs/foto_200x200.jpg",
-    "thumbs/foto_800x600.jpg"
+    "123e4567-e89b-12d3-a456-426614174000",
+    "987e6543-e21b-34d5-c678-526614174111"
   ],
   "message": "Immagine salvata con originali"
 }
@@ -196,16 +197,39 @@ Ti fai dare la lista dei file dentro al bucket (usando un'API key autorizzata pe
 ## DELETE /api/files/object/{bucket}/{chiave}
 Cestina fisicamente un file da MinIO.
 
-## GET /api/files/object/{chiave}
-Usa questa per leggere o visualizzare un file (prodotto) specifico direttamente. 
-L'ho pensata apposta per essere aperta: **nessuna auth richiesta**. È perfetta per essere usata direttamente nei tag HTML del tuo frontend (tipo `<img src="...">` o `<video src="...">`).
+## GET /api/files/signed-url/{uuid}
+Usa questa rotta per generare un **Signed URL** per un file. Devi usare la stessa API Key che ha caricato il file. 
+Il file **deve** essere stato marcato come `isPublic=true` in fase di upload.
 
-Basta passare la `{chiave}` esatta del file (il percorso completo con cui l'ho salvato, es. `thumbs/foto_200x200.jpg`).
-Se il file non si trova nel bucket di default, puoi dirmi dove cercarlo passando `?bucket=nome_del_tuo_bucket`.
+Header:
+```http
+x-api-key: imgf_TUA_CHIAVE
+```
+Risposta (200):
+```json
+{
+  "url": "http://localhost:3003/api/files/read/550e8400-e29b-41d4...?signature=..."
+}
+```
+
+## GET /api/files/read/{uuid}
+Questa è la rotta pubblica per **scaricare/visualizzare** i file che sono marcati come `isPublic=true`. Non richiede API Key, ma **richiede una firma valida in querystring**.
+Se l'URL è manomesso, riceverai un `403 Forbidden`.
 
 Esempio pratico:
 ```text
-http://localhost:3003/api/files/object/thumbs/foto_200x200.jpg?bucket=savedimages
+http://localhost:3003/api/files/read/550e8400-e29b-41d4-a716-446655440000?signature=abc123def456
+```
+(Questa è la rotta che userai dentro i tag `<img src="...">` nel tuo frontend).
+
+## GET /api/files/private/{uuid}
+Usa questa per leggere file marcati come `isPublic=false` (o anche quelli pubblici, se preferisci passarci tramite backend).
+Non usa Signed URL, ma **richiede l'header x-api-key** di chi ha originariamente caricato il file.
+
+Esempio:
+```http
+GET /api/files/private/550e8400-e29b-41d4-a716-446655440000
+x-api-key: imgf_TUA_CHIAVE
 ```
 
 ---
@@ -221,12 +245,13 @@ const fs = require('fs');
 const form = new FormData();
 form.append('file', fs.createReadStream('foto.jpg'));
 form.append('keepOriginal', 'true');
+form.append('isPublic', 'true');
 form.append('sizes', '200x200');
 
 const res = await axios.post('http://localhost:3003/api/files/upload-api', form, {
   headers: { ...form.getHeaders(), 'x-api-key': 'imgf_TUA_CHIAVE' }
 });
-console.log(res.data);
+console.log(res.data); // Restituirà gli UUID
 ```
 
 ### Python (Requests)
@@ -238,7 +263,7 @@ with open("foto.jpg", "rb") as file:
         "http://localhost:3003/api/files/upload-api",
         headers={"x-api-key": "imgf_TUA_CHIAVE"},
         files={"file": file},
-        data={"keepOriginal": "true", "sizes": ["200x200"]}
+        data={"keepOriginal": "true", "isPublic": "true", "sizes": ["200x200"]}
     )
 print(res.json())
 ```
@@ -250,12 +275,13 @@ print(res.json())
 ## Come passo le dimensioni?
 Mettici sempre `LxA`, es. `200x200`. Il backend usa l'opzione "inside", quindi mantiene le proporzioni senza deformarti l'immagine.
 
-## Naming dei file salvati
-- Le varianti le chiamo `thumbs/NomeFile_200x200.jpg`.
-- L'originale rimane col suo nome `NomeFile.jpg`.
-- I video vanno tipo in `videos/NomeVideo.mp4`.
+## Naming e UUID
+- A differenza di prima, non puoi più ricavare il nome del file dal suo percorso originale.
+- Il server ora restituisce **UUID (es. `550e8400...`)** per tutti i file creati, salvando il loro reale posizionamento interno nel Database.
+- Ricordati di salvare questi UUID nel DB del tuo progetto!
 
 ## Security 101
 - Non sparare l'API key sul frontend.
-- Tieni il `.env` fuori dal repo.
+- Nessun file può essere letto senza firma (se pubblico) o senza API Key (se privato).
+- Tieni il `.env` fuori dal repo. Lì dentro ora risiede la password `URL_SIGN_SECRET` per generare le firme degli URL, essenziale per la sicurezza.
 - Il DB per le API keys e l'admin usa password sicure e solo SHA-256 (no cleartext!).

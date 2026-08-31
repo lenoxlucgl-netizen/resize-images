@@ -1,5 +1,7 @@
     const StorageService = require('../services/StorageService');
 const ResizeService = require('../services/ResizeService');
+const FileDbService = require('../services/FileDbService');
+const crypto = require('crypto');
 
 class StorageController {
   static async upload(req, res) {
@@ -16,6 +18,9 @@ class StorageController {
       }
 
       const bucket = targetBucket;
+      const ownerApiKey = req.apiKeyHash || null; // Recuperiamo l'hash dell'API key salvato dal middleware
+      const isPublic = req.body.isPublic === 'true'; // Se è true sarà accessibile via Signed URL
+      
       let customPath = req.body.path ? req.body.path.trim() : '';
       customPath = customPath.replace(/^[\/\\]+/, '').replace(/[\/\\]+$/, ''); // Rimuove slash iniziali/finali
       if (customPath.includes('..')) return res.status(400).json({ error: 'Percorso non valido' });
@@ -27,16 +32,19 @@ class StorageController {
       }
 
       const cleanName = req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, '-');
-      const key = customPath ? `${customPath}/${cleanName}` : cleanName;
       const isImage = req.file.mimetype.startsWith('image/');
 
       if (!isImage) {
         const folder = req.file.mimetype.startsWith('video/') ? 'videos' : 'files';
         const fileKey = customPath ? `${customPath}/${cleanName}` : `${folder}/${cleanName}`;
         await StorageService.uploadFile(bucket, fileKey, req.file.buffer, req.file.mimetype);
+        
+        const uuid = crypto.randomUUID();
+        await FileDbService.registerFile({ uuid, bucket, fileKey, isPublic, ownerApiKey });
+        
         return res.status(201).json({ 
           bucket,
-          original: fileKey,
+          original: uuid,
           keepOriginal: true,
           variants: [],
           message: 'File salvato correttamente'
@@ -46,9 +54,13 @@ class StorageController {
       if (req.body.keepOriginal === 'only') {
         const originalFinalKey = customPath ? `${customPath}/${cleanName}` : cleanName;
         await StorageService.uploadFile(bucket, originalFinalKey, req.file.buffer, req.file.mimetype);
+        
+        const uuid = crypto.randomUUID();
+        await FileDbService.registerFile({ uuid, bucket, fileKey: originalFinalKey, isPublic, ownerApiKey });
+
         return res.status(201).json({ 
           bucket,
-          original: originalFinalKey,
+          original: uuid,
           keepOriginal: true,
           variants: [],
           message: 'Immagine originale salvata'
@@ -65,23 +77,32 @@ class StorageController {
         return res.status(400).json({ error: 'Seleziona almeno una dimensione valida' });
       }
 
-      // Il processo di salvataggio varianti sovrascriverà i file esistenti
-
-      const { variants, originalDimension } = await ResizeService.processImage(req.file.buffer, cleanName, bucket, sizes, customPath, customResizedPath);
+      // Il processo di salvataggio varianti (restituirà path fisici)
+      const { variants: variantKeys, originalDimension } = await ResizeService.processImage(req.file.buffer, cleanName, bucket, sizes, customPath, customResizedPath);
       
+      const variantUuids = [];
+      for (const vKey of variantKeys) {
+          const vUuid = crypto.randomUUID();
+          await FileDbService.registerFile({ uuid: vUuid, bucket, fileKey: vKey, isPublic, ownerApiKey });
+          variantUuids.push(vUuid);
+      }
+
       const ext = cleanName.substring(cleanName.lastIndexOf('.') + 1);
       const baseName = cleanName.substring(0, cleanName.lastIndexOf('.'));
       const originalFinalKey = customPath ? `${customPath}/${baseName}-${originalDimension}.${ext}` : `${baseName}-${originalDimension}.${ext}`;
 
+      let originalUuid = null;
       if (keepOriginal) {
         await StorageService.uploadFile(bucket, originalFinalKey, req.file.buffer, req.file.mimetype);
+        originalUuid = crypto.randomUUID();
+        await FileDbService.registerFile({ uuid: originalUuid, bucket, fileKey: originalFinalKey, isPublic, ownerApiKey });
       }
 
       res.status(201).json({ 
         bucket,
-        original: keepOriginal ? originalFinalKey : null,
+        original: originalUuid,
         keepOriginal,
-        variants,
+        variants: variantUuids,
         message: keepOriginal ? 'Immagine salvata con originali' : 'Immagine salvata solo nelle versioni modificate'
       });
     } catch (error) {

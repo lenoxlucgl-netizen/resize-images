@@ -6,6 +6,10 @@ const app = express();
 
 const PORT = process.env.PORT || 3003;
 const path = require('path');
+const initializeDatabase = require('./config/initDb');
+
+// Inizializza il DB all'avvio
+initializeDatabase();
 
 app.use(helmet({
   contentSecurityPolicy: {
