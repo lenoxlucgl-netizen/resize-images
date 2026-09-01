@@ -20,15 +20,6 @@ class StorageController {
 
       const bucket = targetBucket;
       const ownerApiKey = req.apiKeyHash || null; // Recuperiamo l'hash dell'API key salvato dal middleware
-      const isPublic = req.body.isPublic === 'true'; // Se è true sarà accessibile via Signed URL
-
-      const getFileUrl = (uuid) => {
-        const baseUrl = `${req.protocol}://${req.get('host')}`;
-        if (isPublic) {
-          return `${baseUrl}/api/files/read/${uuid}`;
-        }
-        return `${baseUrl}/api/files/private/${uuid}`;
-      };
       
       let customPath = req.body.path !== undefined ? req.body.path.trim() : null;
       if (customPath !== null) {
@@ -41,6 +32,24 @@ class StorageController {
           customResizedPath = customResizedPath.replace(/^[\/\\]+/, '').replace(/[\/\\]+$/, '');
           if (customResizedPath.includes('..')) return res.status(400).json({ error: 'Percorso modificate non valido' });
       }
+
+      let isPublic = true;
+      if (req.body.isPublic !== undefined) {
+        isPublic = req.body.isPublic === 'true';
+      } else {
+        const finalCustomPath = customPath !== null ? customPath : '';
+        if (targetBucket === 'testapi' && finalCustomPath.startsWith('portfolio')) {
+          isPublic = false;
+        }
+      }
+
+      const getFileUrl = (uuid) => {
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        if (isPublic) {
+          return `${baseUrl}/api/files/read/${uuid}`;
+        }
+        return `${baseUrl}/api/files/private/${uuid}`;
+      };
 
       const cleanName = req.file.originalname.replace(/[^a-zA-Z0-9._-]/g, '-');
       const isImage = req.file.mimetype.startsWith('image/');

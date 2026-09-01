@@ -22,5 +22,24 @@
         }
       }
     ]
+  },
+  "testapi": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": {
+          "AWS": [
+            "*"
+          ]
+        },
+        "Action": [
+          "s3:GetObject"
+        ],
+        "NotResource": [
+          "arn:aws:s3:::testapi/portfolio/*"
+        ]
+      }
+    ]
   }
 }

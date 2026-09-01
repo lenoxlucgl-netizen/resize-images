@@ -157,7 +157,7 @@ Questi sono i parametri che gestisco:
 | Campo | Obbligatorio? | Che roba è? |
 |----------|----------|----------|
 | file | Sì | Il file fisico da caricare |
-| isPublic | Sì | 'true' o 'false'. Se true, al file in MinIO viene assegnato il tag `visibility=public`, rendendolo accessibile da chiunque (tramite Signed URL o URL diretto MinIO). Se false, non avrà questo tag e sarà privato. |
+| isPublic | No | 'true' o 'false'. Se non specificato, il sistema lo calcolerà automaticamente in base alla cartella (es. in `testapi`, la cartella `portfolio/` è privata, il resto pubblico). |
 | sizes | Dipende | Le misure. Obbligatorio per le foto a meno che non metti keepOriginal='only' |
 | keepOriginal | No | Vuoi tenere l'originale? ('true', 'false', 'only') |
 | path | No | Dove lo salvo internamente (percorso originale, non verrà esposto) |
@@ -169,7 +169,7 @@ Accetto di tutto. Poi internamente il backend fa questo:
 - **Immagini**: fa il resize se richiesto.
 - **Video**: non li tocca, li salva sotto `videos/` o nel path che hai chiesto.
 - **Altro**: lo salva in `files/` o nel tuo path senza farci nulla.
-- **Sicurezza Pubblico/Privato**: A seconda del valore di `isPublic` (true o false) che passi, il sistema assegnerà automaticamente un tag `visibility=public` al file su MinIO. I file con questo tag diventano visibili (in sola lettura) anche dall'esterno interrogando direttamente MinIO, grazie alle nuove Policy autoconfiguranti basate sui tag. Non vengono più create cartelle separate per file pubblici e privati.
+- **Sicurezza Pubblico/Privato**: Se non passi esplicitamente il parametro `isPublic`, il backend utilizza delle regole basate sui percorsi. Ad esempio, per il bucket `testapi`, tutto ciò che finisce dentro la cartella `portfolio` è considerato **Privato**; tutto il resto è **Pubblico**. Queste regole sono applicate a livello di storage su MinIO all'avvio del server tramite il file `rules.json`.
 
 ### Limiti e Duplicati
 - Non ci sono limiti di peso imposti a codice. Vai sereno.
