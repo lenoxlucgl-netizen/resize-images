@@ -5,15 +5,16 @@ class SecurityService {
     return process.env.URL_SIGN_SECRET || 'default_secret_for_signing_urls_change_me';
   }
 
-  static generateSignature(uuid) {
+  static generateSignature(uuid, expires = null) {
     const hmac = crypto.createHmac('sha256', this.getSecret());
-    hmac.update(uuid);
+    const dataToSign = expires ? `${uuid}|${expires}` : uuid;
+    hmac.update(dataToSign);
     return hmac.digest('hex');
   }
 
-  static verifySignature(uuid, signature) {
+  static verifySignature(uuid, signature, expires = null) {
     if (!signature) return false;
-    const expected = this.generateSignature(uuid);
+    const expected = this.generateSignature(uuid, expires);
     
     // Convertiamo le stringhe in buffer per il confronto timing-safe
     const expectedBuffer = Buffer.from(expected, 'hex');

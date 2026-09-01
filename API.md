@@ -223,6 +223,7 @@ Cestina fisicamente un file da MinIO.
 
 ## GET /api/files/signed-url/{uuid}
 Usa questa rotta per farti restituire dal server l'URL corretto per un file (libero se pubblico, firmato se privato). Devi usare la stessa API Key che ha caricato il file.
+Opzionalmente puoi passare `?expiresIn=3600` (in secondi) per decidere la durata del link (di default è un'ora).
 
 Header:
 ```http
@@ -231,10 +232,10 @@ x-api-key: imgf_TUA_CHIAVE
 Risposta (200):
 ```json
 {
-  "url": "http://localhost:3003/api/files/private-signed/550e8400-e29b-41d4...?signature=..."
+  "url": "http://localhost:3003/api/files/private-signed/550e8400-e29b-41d4...?expires=1790000000&signature=..."
 }
 ```
-*(Se il file è pubblico, l'URL restituito sarà invece `http://localhost:3003/api/files/read/...` senza firma).*
+*(Se il file è pubblico, l'URL restituito sarà invece `http://localhost:3003/api/files/read/...` senza firma e scadenza).*
 
 ## GET /api/files/read/{uuid}
 Questa è la rotta pubblica per **scaricare/visualizzare** i file che sono marcati come `isPublic=true`. Non richiede API Key e **non richiede più alcuna firma**. È un accesso diretto e libero per le risorse pubbliche.
@@ -251,7 +252,7 @@ Se l'URL è manomesso, riceverai un `403 Forbidden`.
 
 Esempio pratico:
 ```text
-http://localhost:3003/api/files/private-signed/550e8400-e29b-41d4-a716-446655440000?signature=abc123def456
+http://localhost:3003/api/files/private-signed/550e8400-e29b-41d4-a716-446655440000?expires=1790000000&signature=abc123def456
 ```
 *(Questa è la rotta che ti restituisce `generateSignedUrl` quando interroghi un file privato).*
 
@@ -263,7 +264,7 @@ Esempio:
 ```http
 GET /api/files/private/550e8400-e29b-41d4-a716-446655440000
 ## GET o POST /api/files/get-signature
-Se hai il link base di un file privato (es. `http://localhost:3003/api/files/private-signed/550e8400-...?signature=...`) ma la firma è scaduta o ti serve ricalcolarla, puoi passare il link intero a questa rotta. Il server estrarrà in automatico l'UUID e ti restituirà la nuova firma. Serve la stessa API Key che ha caricato il file.
+Se hai il link base di un file privato (es. `http://localhost:3003/api/files/private-signed/550e8400-...?expires=179...&signature=...`) ma la firma è scaduta o ti serve ricalcolarla, puoi passare il link intero a questa rotta. Il server estrarrà in automatico l'UUID e ti restituirà la nuova firma. Serve la stessa API Key che ha caricato il file. Puoi anche specificare `expiresIn` (in secondi) nel body o in querystring.
 
 **GET:**
 ```http
@@ -286,7 +287,8 @@ Risposta (200):
 ```json
 {
   "signature": "ab12cd34ef56...",
-  "uuid": "550e8400-e29b-41d4-a716-446655440000"
+  "uuid": "550e8400-e29b-41d4-a716-446655440000",
+  "expires": 1790000000
 }
 ```
 

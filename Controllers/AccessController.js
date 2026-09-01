@@ -26,8 +26,10 @@ class AccessController {
         url = `${baseUrl}/api/files/read/${uuid}`;
       } else {
         // File privato, url con firma
-        const signature = SecurityService.generateSignature(uuid);
-        url = `${baseUrl}/api/files/private-signed/${uuid}?signature=${signature}`;
+        const expiresInSeconds = req.query.expiresIn || req.body.expiresIn || 3600;
+        const expires = Math.floor(Date.now() / 1000) + parseInt(expiresInSeconds);
+        const signature = SecurityService.generateSignature(uuid, expires);
+        url = `${baseUrl}/api/files/private-signed/${uuid}?expires=${expires}&signature=${signature}`;
       }
       
       res.json({ url });
@@ -59,8 +61,10 @@ class AccessController {
         return res.status(403).json({ error: 'Non hai i permessi per generare la firma per questo file' });
       }
 
-      const signature = SecurityService.generateSignature(uuid);
-      res.json({ signature, uuid });
+      const expiresInSeconds = req.body.expiresIn || req.query.expiresIn || 3600;
+      const expires = Math.floor(Date.now() / 1000) + parseInt(expiresInSeconds);
+      const signature = SecurityService.generateSignature(uuid, expires);
+      res.json({ signature, uuid, expires });
     } catch (error) {
       res.status(500).json({ error: 'Errore interno' });
     }
@@ -95,13 +99,19 @@ class AccessController {
 
   static async readPrivateSignedFile(req, res) {
     const { uuid } = req.params;
-    const { signature } = req.query; // Prende la firma dalla query string
+    const { signature, expires } = req.query; // Prende la firma e expires dalla query string
     const ipAddress = req.ip || req.connection?.remoteAddress || 'unknown';
     try {
       const file = await FileDbService.getFile(uuid);
       if (!file) return res.status(404).json({ error: 'File non trovato' });
+      
+      // Controlla che il link non sia scaduto
+      if (expires && Math.floor(Date.now() / 1000) > parseInt(expires)) {
+        return res.status(403).json({ error: 'Link scaduto.' });
+      }
+
       // Controlla che la firma sia valida
-      if (!SecurityService.verifySignature(uuid, signature)) {
+      if (!SecurityService.verifySignature(uuid, signature, expires)) {
         return res.status(403).json({ error: 'Firma non valida o scaduta.' });
       }
       const object = await StorageService.getFile(file.bucket, file.file_key);
