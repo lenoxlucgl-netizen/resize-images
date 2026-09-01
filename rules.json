@@ -6,7 +6,12 @@
         "Effect": "Allow",
         "Principal": { "AWS": ["*"] },
         "Action": ["s3:GetObject"],
-        "Resource": ["arn:aws:s3:::savedimages/public/*"]
+        "Resource": ["arn:aws:s3:::savedimages/*"],
+        "Condition": {
+          "StringEquals": {
+            "s3:ExistingObjectTag/visibility": "public"
+          }
+        }
       }
     ]
   }

@@ -9,9 +9,14 @@ services:
     env_file:
       - .env.docker
     depends_on:
-      - mysql
-      - minio
-      - redis
+      mysql:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./rules.json:/usr/src/app/rules.json
 
   mysql:
     image: mysql:8.0
