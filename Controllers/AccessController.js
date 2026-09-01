@@ -67,7 +67,9 @@ class AccessController {
       const signature = SecurityService.generateSignature(uuid, expires);
       
       // Costruiamo il link completo basato su quello in input
-      const baseUrlOnly = url.split('?')[0];
+      let baseUrlOnly = url.split('?')[0];
+      // Assicuriamoci che l'URL punti all'endpoint corretto per i link firmati
+      baseUrlOnly = baseUrlOnly.replace(/\/api\/files\/private\//, '/api/files/private-signed/');
       const signedUrl = `${baseUrlOnly}?expires=${expires}&signature=${signature}`;
       
       res.json({ signature, uuid, expires, signedUrl });
