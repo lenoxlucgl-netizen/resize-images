@@ -64,7 +64,48 @@ class AccessController {
       const expiresInSeconds = req.body.expiresIn || req.query.expiresIn || 3600;
       const expires = Math.floor(Date.now() / 1000) + parseInt(expiresInSeconds);
       const signature = SecurityService.generateSignature(uuid, expires);
-      res.json({ signature, uuid, expires });
+      
+      // Costruiamo il link completo basato su quello in input
+      const baseUrlOnly = url.split('?')[0];
+      const signedUrl = `${baseUrlOnly}?expires=${expires}&signature=${signature}`;
+      
+      res.json({ signature, uuid, expires, signedUrl });
+    } catch (error) {
+      res.status(500).json({ error: 'Errore interno' });
+    }
+  }
+
+  static async generateGenericSignature(req, res) {
+    try {
+      const target = req.body.url || req.query.url || req.body.file || req.query.file;
+      
+      if (!target) {
+        return res.status(400).json({ error: 'Specifica un parametro "url" o "file"' });
+      }
+
+      const expiresInSeconds = req.body.expiresIn || req.query.expiresIn || 3600;
+      const expires = Math.floor(Date.now() / 1000) + parseInt(expiresInSeconds);
+      
+      const signature = SecurityService.generateSignature(target, expires);
+      
+      const separator = target.includes('?') ? '&' : '?';
+      let baseUrl = "";
+      
+      if (req.body.file || req.query.file) {
+          baseUrl = process.env.STORAGE_BASE_URL || 'https://storage.bookizon.it/';
+      }
+      
+      const cleanTarget = (req.body.file || req.query.file) ? target.replace(/^\//, '') : target;
+      const finalBase = baseUrl ? `${baseUrl}${cleanTarget}` : target;
+      
+      const signedUrl = `${finalBase}${separator}expires=${expires}&signature=${signature}`;
+
+      res.json({
+        url: finalBase,
+        expires,
+        signature,
+        signedUrl
+      });
     } catch (error) {
       res.status(500).json({ error: 'Errore interno' });
     }

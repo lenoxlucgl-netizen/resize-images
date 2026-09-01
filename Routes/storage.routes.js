@@ -78,7 +78,10 @@ router.delete('/object/:bucket/*', apiKey, async (req, res) => {
   }
 });
 
-// Nuove rotte per Signed URL e download
+// Nuove rotte per Signed URL generici e per quelli interni
+router.get('/signature', apiKey, AccessController.generateGenericSignature);
+router.post('/signature', apiKey, AccessController.generateGenericSignature);
+
 router.get('/signed-url/:uuid', apiKey, AccessController.generateSignedUrl);
 router.post('/get-signature', apiKey, AccessController.getSignatureFromUrl);
 router.get('/get-signature', apiKey, AccessController.getSignatureFromUrl);

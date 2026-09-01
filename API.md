@@ -263,7 +263,26 @@ Non usa Signed URL, ma **richiede l'header x-api-key** di chi ha originariamente
 Esempio:
 ```http
 GET /api/files/private/550e8400-e29b-41d4-a716-446655440000
-## GET o POST /api/files/get-signature
+## GET o POST /api/files/signature (Firma Generica)
+Questa rotta ti permette di firmare un URL arbitrario (es. un link S3, Cloudflare, Bookizon Storage, ecc.) in modo totalmente slegato dal database interno.
+Passa `url` per un link completo, oppure `file` (es. `invoices/2026/fattura.pdf`) e il sistema aggiungerà in automatico un dominio base (configurabile tramite `STORAGE_BASE_URL` in `.env`, di default `https://storage.bookizon.it/`).
+
+**Esempio:**
+```http
+GET /api/files/signature?url=https://storage.miosito.it/files/documento.pdf&expiresIn=3600
+x-api-key: imgf_TUA_CHIAVE
+```
+**Risposta:**
+```json
+{
+  "url": "https://storage.miosito.it/files/documento.pdf",
+  "expires": 1790000000,
+  "signature": "9d2e8a7c...",
+  "signedUrl": "https://storage.miosito.it/files/documento.pdf?expires=1790000000&signature=9d2e8a7c..."
+}
+```
+
+## GET o POST /api/files/get-signature (Interna tramite UUID)
 Se hai il link base di un file privato (es. `http://localhost:3003/api/files/private-signed/550e8400-...?expires=179...&signature=...`) ma la firma è scaduta o ti serve ricalcolarla, puoi passare il link intero a questa rotta. Il server estrarrà in automatico l'UUID e ti restituirà la nuova firma. Serve la stessa API Key che ha caricato il file. Puoi anche specificare `expiresIn` (in secondi) nel body o in querystring.
 
 **GET:**
@@ -288,7 +307,8 @@ Risposta (200):
 {
   "signature": "ab12cd34ef56...",
   "uuid": "550e8400-e29b-41d4-a716-446655440000",
-  "expires": 1790000000
+  "expires": 1790000000,
+  "signedUrl": "http://localhost:3003/api/files/private-signed/550e8400-e29b-41d4-a716-446655440000?expires=1790000000&signature=ab12cd34ef56..."
 }
 ```
 
