@@ -14,7 +14,8 @@ class AccessController {
       }
       
       // Controllo che il richiedente sia il proprietario (tramite API Key hash inserito nel middleware apiKey)
-      if (req.apiKeyHash !== file.owner_api_key) {
+      // oppure che abbia un token admin (authorizedBucket === '*')
+      if (req.apiKeyHash !== file.owner_api_key && req.authorizedBucket !== '*') {
         return res.status(403).json({ error: 'Non hai i permessi per generare URL per questo file' });
       }
 
@@ -57,7 +58,7 @@ class AccessController {
         return res.status(404).json({ error: 'File non trovato' });
       }
       
-      if (req.apiKeyHash !== file.owner_api_key) {
+      if (req.apiKeyHash !== file.owner_api_key && req.authorizedBucket !== '*') {
         return res.status(403).json({ error: 'Non hai i permessi per generare la firma per questo file' });
       }
 
@@ -176,8 +177,8 @@ class AccessController {
         return res.status(404).json({ error: 'File non trovato' });
       }
 
-      // Controllo permesso: Stessa API Key usata per l'upload
-      if (req.apiKeyHash !== file.owner_api_key) {
+      // Controllo permesso: Stessa API Key usata per l'upload oppure token admin
+      if (req.apiKeyHash !== file.owner_api_key && req.authorizedBucket !== '*') {
         await FileDbService.logAccess({ uuid, ipAddress, status: 'FORBIDDEN_UNAUTHORIZED' });
         return res.status(403).json({ error: 'Accesso negato. Non sei il proprietario del file.' });
       }
