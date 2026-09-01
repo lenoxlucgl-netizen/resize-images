@@ -31,11 +31,11 @@ class StorageController {
         return `${baseUrl}/api/files/private/${uuid}`;
       };
       
-      const prefix = isPublic ? 'public' : 'private';
-
-      let customPath = req.body.path ? req.body.path.trim() : '';
-      customPath = customPath.replace(/^[\/\\]+/, '').replace(/[\/\\]+$/, ''); // Rimuove slash iniziali/finali
-      if (customPath.includes('..')) return res.status(400).json({ error: 'Percorso non valido' });
+      let customPath = req.body.path !== undefined ? req.body.path.trim() : null;
+      if (customPath !== null) {
+        customPath = customPath.replace(/^[\/\\]+/, '').replace(/[\/\\]+$/, ''); // Rimuove slash iniziali/finali
+        if (customPath.includes('..')) return res.status(400).json({ error: 'Percorso non valido' });
+      }
 
       let customResizedPath = req.body.resizedPath !== undefined ? req.body.resizedPath.trim() : null;
       if (customResizedPath !== null) {
@@ -48,8 +48,10 @@ class StorageController {
 
       if (!isImage) {
         const folder = req.file.mimetype.startsWith('video/') ? 'videos' : 'files';
-        const fileKey = customPath ? `${prefix}/${customPath}/${cleanName}` : `${prefix}/${folder}/${cleanName}`;
-        await StorageService.uploadFile(bucket, fileKey, req.file.buffer, req.file.mimetype);
+        const fileKey = customPath !== null 
+            ? [customPath, cleanName].filter(Boolean).join('/')
+            : [folder, cleanName].filter(Boolean).join('/');
+        await StorageService.uploadFile(bucket, fileKey, req.file.buffer, req.file.mimetype, isPublic);
         
         const uuid = crypto.randomUUID();
         await FileDbService.registerFile({ uuid, bucket, fileKey, isPublic, ownerApiKey });
@@ -64,8 +66,8 @@ class StorageController {
       }
 
       if (req.body.keepOriginal === 'only') {
-        const originalFinalKey = customPath ? `${prefix}/${customPath}/${cleanName}` : `${prefix}/${cleanName}`;
-        await StorageService.uploadFile(bucket, originalFinalKey, req.file.buffer, req.file.mimetype);
+        const originalFinalKey = [customPath, cleanName].filter(Boolean).join('/');
+        await StorageService.uploadFile(bucket, originalFinalKey, req.file.buffer, req.file.mimetype, isPublic);
         
         const uuid = crypto.randomUUID();
         await FileDbService.registerFile({ uuid, bucket, fileKey: originalFinalKey, isPublic, ownerApiKey });
@@ -90,11 +92,11 @@ class StorageController {
       }
 
       // Il processo di salvataggio varianti (restituirà path fisici)
-      const finalCustomPath = customPath ? `${prefix}/${customPath}` : prefix;
+      const finalCustomPath = [customPath].filter(Boolean).join('/');
       const finalCustomResizedPath = customResizedPath !== null 
-          ? (customResizedPath ? `${prefix}/${customResizedPath}` : prefix) 
+          ? [customResizedPath].filter(Boolean).join('/')
           : null;
-      const { variants: variantKeys, originalDimension } = await ResizeService.processImage(req.file.buffer, cleanName, bucket, sizes, finalCustomPath, finalCustomResizedPath);
+      const { variants: variantKeys, originalDimension } = await ResizeService.processImage(req.file.buffer, cleanName, bucket, sizes, finalCustomPath, finalCustomResizedPath, isPublic);
       
       const variantObjs = [];
       for (const vKey of variantKeys) {
@@ -105,11 +107,11 @@ class StorageController {
 
       const ext = cleanName.substring(cleanName.lastIndexOf('.') + 1);
       const baseName = cleanName.substring(0, cleanName.lastIndexOf('.'));
-      const originalFinalKey = customPath ? `${prefix}/${customPath}/${baseName}-${originalDimension}.${ext}` : `${prefix}/${baseName}-${originalDimension}.${ext}`;
+      const originalFinalKey = [customPath, `${baseName}-${originalDimension}.${ext}`].filter(Boolean).join('/');
 
       let originalObj = null;
       if (keepOriginal) {
-        await StorageService.uploadFile(bucket, originalFinalKey, req.file.buffer, req.file.mimetype);
+        await StorageService.uploadFile(bucket, originalFinalKey, req.file.buffer, req.file.mimetype, isPublic);
         const originalUuid = crypto.randomUUID();
         await FileDbService.registerFile({ uuid: originalUuid, bucket, fileKey: originalFinalKey, isPublic, ownerApiKey });
         originalObj = { uuid: originalUuid, url: getFileUrl(originalUuid) };

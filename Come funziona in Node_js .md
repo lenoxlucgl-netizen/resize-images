@@ -394,6 +394,7 @@ savedimages/
     └── foto_800x600.jpg
 ```
 
+
 ### Collisioni
 
 Se un file con lo stesso nome viene caricato, il file precedente verrà **sovrascritto** senza mostrare errori. Questo comportamento (implementato di recente per facilitare caricamenti massivi in sovrascrittura) permette di aggiornare agilmente file vecchi mantenendo le chiavi S3 invariate. In produzione, se l'esigenza cambia, sarebbe opportuno aggiungere una logica anti-collisione.

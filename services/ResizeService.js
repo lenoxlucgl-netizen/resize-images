@@ -3,7 +3,7 @@ const StorageService = require('./StorageService');
 const resizeConfig = require('../config/resize');
 
 class ResizeService {
-  static async processImage(originalBuffer, cleanName, bucket, sizes = resizeConfig.sizes, originalPath = '', resizedPath = null) {
+  static async processImage(originalBuffer, cleanName, bucket, sizes = resizeConfig.sizes, originalPath = '', resizedPath = null, isPublic = false) {
     const image = sharp(originalBuffer);
     const metadata = await image.metadata();
     const results = [];
@@ -23,7 +23,7 @@ class ResizeService {
         .resize(width, height, { fit: 'inside' })
         .toBuffer();
 
-      await StorageService.uploadFile(bucket, outputKey, resizedBuffer, `image/${metadata.format}`);
+      await StorageService.uploadFile(bucket, outputKey, resizedBuffer, `image/${metadata.format}`, isPublic);
       results.push(outputKey);
     }
 

@@ -58,10 +58,11 @@ services:
       /bin/sh -c "
       /usr/bin/mc alias set myminio http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD;
       /usr/bin/mc mb myminio/$$MINIO_BUCKET || true;
-      /usr/bin/mc anonymous set none myminio/$$MINIO_BUCKET || true;
-      /usr/bin/mc anonymous set download myminio/$$MINIO_BUCKET/public || true;
+      /usr/bin/mc anonymous set-json /policy/minio-public-policy.json myminio/$$MINIO_BUCKET || true;
       exit 0;
       "
+    volumes:
+      - ./minio-public-policy.json:/policy/minio-public-policy.json
 
   redis:
     image: redis:alpine

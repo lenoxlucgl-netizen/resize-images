@@ -48,7 +48,7 @@ class StorageService {
     }
   }
 
-  static async uploadFile(bucket, key, buffer, contentType) {
+  static async uploadFile(bucket, key, buffer, contentType, isPublic = false) {
     if ((process.env.STORAGE_TYPE || 'local') === 'local') {
       const localKey = key.replace(/^[/\\]+/, '');
       const filePath = path.join(localRoot, localKey);
@@ -56,12 +56,19 @@ class StorageService {
       await fs.writeFile(filePath, buffer);
       return { Key: localKey, ContentType: contentType };
     }
-    return await client.send(new PutObjectCommand({
+    
+    const params = {
       Bucket: bucket,
       Key: key,
       Body: buffer,
       ContentType: contentType
-    }));
+    };
+    
+    if (isPublic) {
+      params.Tagging = 'visibility=public';
+    }
+
+    return await client.send(new PutObjectCommand(params));
   }
 
   static async getFile(bucket, key) {
