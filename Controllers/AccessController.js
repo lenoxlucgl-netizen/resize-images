@@ -71,6 +71,7 @@ class AccessController {
       
       res.json({ signature, uuid, expires, signedUrl });
     } catch (error) {
+      console.error("Errore in getSignatureFromUrl:", error);
       res.status(500).json({ error: 'Errore interno' });
     }
   }
@@ -159,6 +160,7 @@ class AccessController {
       res.set('Content-Type', object.ContentType || 'application/octet-stream');
       object.Body.pipe(res);
     } catch (error) {
+      console.error("Errore in readPrivateSignedFile:", error);
       res.status(500).json({ error: 'Errore interno' });
     }
   }
