@@ -7,9 +7,13 @@ const app = express();
 const PORT = process.env.PORT || 3003;
 const path = require('path');
 const initializeDatabase = require('./config/initDb');
+const StorageService = require('./services/StorageService');
 
 // Inizializza il DB all'avvio
 initializeDatabase();
+
+// Carica e applica le policy da rules.json
+StorageService.applyRulesFromFile();
 
 app.use(helmet({
   contentSecurityPolicy: {

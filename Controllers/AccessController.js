@@ -36,9 +36,38 @@ class AccessController {
     }
   }
 
+  static async getSignatureFromUrl(req, res) {
+    try {
+      const url = req.body.url || req.query.url;
+      if (!url) return res.status(400).json({ error: 'Manca il parametro url (body o query string)' });
+
+      // Cerca un UUID valido all'interno del link
+      const uuidMatch = url.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+      
+      if (!uuidMatch) {
+        return res.status(400).json({ error: 'Nessun UUID valido trovato nell\'URL fornito' });
+      }
+      
+      const uuid = uuidMatch[0];
+      const file = await FileDbService.getFile(uuid);
+      
+      if (!file) {
+        return res.status(404).json({ error: 'File non trovato' });
+      }
+      
+      if (req.apiKeyHash !== file.owner_api_key) {
+        return res.status(403).json({ error: 'Non hai i permessi per generare la firma per questo file' });
+      }
+
+      const signature = SecurityService.generateSignature(uuid);
+      res.json({ signature, uuid });
+    } catch (error) {
+      res.status(500).json({ error: 'Errore interno' });
+    }
+  }
+
   static async readPublicFile(req, res) {
     const { uuid } = req.params;
-    const { signature } = req.query;
     const ipAddress = req.ip || req.connection?.remoteAddress || 'unknown';
 
     try {
@@ -52,13 +81,6 @@ class AccessController {
         await FileDbService.logAccess({ uuid, ipAddress, status: 'FORBIDDEN_PRIVATE' });
         return res.status(403).json({ error: 'Accesso non autorizzato al file.' });
       }
-
-      /*
-      if (!SecurityService.verifySignature(uuid, signature)) {
-        await FileDbService.logAccess({ uuid, ipAddress, status: 'FORBIDDEN_INVALID_SIG' });
-        return res.status(403).json({ error: 'Accesso non autorizzato al file.' });
-      }
-      */
 
       const object = await StorageService.getFile(file.bucket, file.file_key);
       await FileDbService.logAccess({ uuid, ipAddress, status: 'SUCCESS_PUBLIC' });

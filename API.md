@@ -262,7 +262,76 @@ Non usa Signed URL, ma **richiede l'header x-api-key** di chi ha originariamente
 Esempio:
 ```http
 GET /api/files/private/550e8400-e29b-41d4-a716-446655440000
+## GET o POST /api/files/get-signature
+Se hai il link base di un file privato (es. `http://localhost:3003/api/files/private-signed/550e8400-...?signature=...`) ma la firma è scaduta o ti serve ricalcolarla, puoi passare il link intero a questa rotta. Il server estrarrà in automatico l'UUID e ti restituirà la nuova firma. Serve la stessa API Key che ha caricato il file.
+
+**GET:**
+```http
+GET /api/files/get-signature?url=http://localhost:3003/api/files/private-signed/550e8400-e29b-41d4-a716-446655440000
 x-api-key: imgf_TUA_CHIAVE
+```
+
+**POST:**
+```http
+POST /api/files/get-signature
+x-api-key: imgf_TUA_CHIAVE
+Content-Type: application/json
+
+{
+  "url": "http://localhost:3003/api/files/private-signed/550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+Risposta (200):
+```json
+{
+  "signature": "ab12cd34ef56...",
+  "uuid": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+---
+
+# Gestione Policy MinIO 🛡️
+
+Il sistema offre due modi per gestire in automatico le "regole" (policy) di MinIO, ad esempio per decidere se un'intera cartella deve essere pubblica.
+
+## 1. File `rules.json` (Automatica all'avvio)
+Nella root del progetto troverai un file chiamato `rules.json`. Puoi scrivere qui dentro le tue policy AWS S3 divise per bucket.
+Ogni volta che **avvii il server Node.js**, il server legge questo file e applica automaticamente le policy su MinIO.
+
+Esempio di `rules.json` per rendere pubblica tutta la cartella `public/` del bucket `savedimages`:
+```json
+{
+  "savedimages": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": { "AWS": ["*"] },
+        "Action": ["s3:GetObject"],
+        "Resource": ["arn:aws:s3:::savedimages/public/*"]
+      }
+    ]
+  }
+}
+```
+
+## 2. POST /api/files/bucket-policy (In tempo reale)
+Se non vuoi riavviare il server, puoi inviare una policy in tempo reale usando le API. **Richiede Token Admin**.
+
+Header:
+```http
+Authorization: Bearer <TOKEN_ADMIN>
+Content-Type: application/json
+```
+
+Body:
+```json
+{
+  "bucket": "savedimages",
+  "policy": { ... } // Oggetto JSON con la tua policy
+}
 ```
 
 ---

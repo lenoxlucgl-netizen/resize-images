@@ -25,8 +25,7 @@ class StorageController {
       const getFileUrl = (uuid) => {
         const baseUrl = `${req.protocol}://${req.get('host')}`;
         if (isPublic) {
-          const signature = SecurityService.generateSignature(uuid);
-          return `${baseUrl}/api/files/read/${uuid}?signature=${signature}`;
+          return `${baseUrl}/api/files/read/${uuid}`;
         }
         return `${baseUrl}/api/files/private/${uuid}`;
       };

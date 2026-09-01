@@ -20,6 +20,22 @@ router.get('/buckets', adminAuth, async (req, res) => {
   }
 });
 
+router.post('/bucket-policy', adminAuth, async (req, res) => {
+  try {
+    const { bucket, policy } = req.body;
+    if (!bucket || !policy) {
+      return res.status(400).json({ error: 'Manca bucket o policy' });
+    }
+    // Converte l'oggetto JSON in stringa se necessario
+    const policyString = typeof policy === 'string' ? policy : JSON.stringify(policy);
+    
+    await StorageService.setBucketPolicy(bucket, policyString);
+    res.json({ success: true, message: 'Policy applicata con successo su MinIO' });
+  } catch (error) {
+    res.status(500).json({ error: 'Errore durante l\'applicazione della policy', details: error.message });
+  }
+});
+
 router.get('/my-buckets', apiKey, async (req, res) => {
   try {
     if (req.authorizedBucket === '*') {
@@ -64,8 +80,10 @@ router.delete('/object/:bucket/*', apiKey, async (req, res) => {
 
 // Nuove rotte per Signed URL e download
 router.get('/signed-url/:uuid', apiKey, AccessController.generateSignedUrl);
+router.post('/get-signature', apiKey, AccessController.getSignatureFromUrl);
+router.get('/get-signature', apiKey, AccessController.getSignatureFromUrl);
 router.get('/read/:uuid', AccessController.readPublicFile); // Endpoint pubblico libero
 router.get('/private-signed/:uuid', AccessController.readPrivateSignedFile);
 router.get('/private/:uuid', apiKey, AccessController.readPrivateFile); // Endpoint privato tramite API Key
 
-module.exports = router;
+module.exports = router;

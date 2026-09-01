@@ -1,4 +1,4 @@
-const { PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListBucketsCommand, HeadObjectCommand, ListObjectsV2Command } = require('@aws-sdk/client-s3');
+const { PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListBucketsCommand, HeadObjectCommand, ListObjectsV2Command, PutBucketPolicyCommand } = require('@aws-sdk/client-s3');
 const fs = require('fs/promises');
 const path = require('path');
 const StorageConfig = require('../config/storage');
@@ -91,6 +91,39 @@ class StorageService {
       Bucket: bucket,
       Key: key
     }));
+  }
+
+  static async setBucketPolicy(bucket, policyString) {
+    if ((process.env.STORAGE_TYPE || 'local') === 'local') {
+      return;
+    }
+    return await client.send(new PutBucketPolicyCommand({
+      Bucket: bucket,
+      Policy: policyString
+    }));
+  }
+
+  static async applyRulesFromFile() {
+    if ((process.env.STORAGE_TYPE || 'local') === 'local') return;
+    try {
+      const rulesPath = path.join(__dirname, '..', 'rules.json');
+      const data = await fs.readFile(rulesPath, 'utf8');
+      const rules = JSON.parse(data);
+      for (const [bucket, policy] of Object.entries(rules)) {
+        try {
+          await this.setBucketPolicy(bucket, JSON.stringify(policy));
+          console.log(`Policy caricata da rules.json per il bucket: ${bucket}`);
+        } catch (e) {
+          console.error(`Errore nell'applicare la policy al bucket ${bucket}:`, e.message);
+        }
+      }
+    } catch (e) {
+      if (e.code === 'ENOENT') {
+        console.log('Nessun file rules.json trovato, salto l\'applicazione automatica delle policy.');
+      } else {
+        console.error('Errore nella lettura del file rules.json:', e.message);
+      }
+    }
   }
 }
 
