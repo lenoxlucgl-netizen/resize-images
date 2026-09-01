@@ -351,86 +351,45 @@ Questa sequenza evita di conservare l'originale quando l'utente ha scelto esplic
 
 ---
 
-## 7. Naming e struttura degli oggetti
+## 7. Naming e struttura degli oggetti (UUID)
 
-Il formato attuale è:
+Il formato attuale salva i file utilizzando degli **UUID** (identificativi unici universali) invece del nome originale del file.
+Ogni caricamento genera un UUID univoco per l'originale (se mantenuto) e UUID univoci per tutte le varianti ridimensionate.
 
-```text
-thumbs/NomeOriginale-Dimensione.estensione
-```
+I reali percorsi interni e l'appartenenza al bucket e all'API Key vengono salvati nel Database (tabella `file_records`).
 
-Esempio con `paesaggio.jpg` (dimensione originale 2000x1500):
-
-```text
-thumbs/paesaggio-200x200.jpg
-thumbs/paesaggio-800x600.jpg
-```
-
-Se viene conservato anche l'originale:
-
-```text
-paesaggio-2000x1500.jpg
-```
-
-La directory `thumbs` deriva dalla configurazione:
-
-```env
-RESIZED_PATH=/thumbs
-```
-
-Il servizio rimuove gli slash iniziali e finali per ottenere una chiave S3 coerente:
-
-```text
-thumbs/
-```
-
-La struttura del bucket è quindi:
-
-```text
-savedimages/
-├── foto.jpg
-└── thumbs/
-    ├── foto_200x200.jpg
-    └── foto_800x600.jpg
-```
-
+Questo evita qualsiasi problema di collisione dei nomi o sovrascritture accidentali quando due file hanno lo stesso nome, e garantisce una totale sicurezza sui permessi di accesso (i file privati richiedono firma o API Key).
 
 ### Collisioni
 
-Se un file con lo stesso nome viene caricato, il file precedente verrà **sovrascritto** senza mostrare errori. Questo comportamento (implementato di recente per facilitare caricamenti massivi in sovrascrittura) permette di aggiornare agilmente file vecchi mantenendo le chiavi S3 invariate. In produzione, se l'esigenza cambia, sarebbe opportuno aggiungere una logica anti-collisione.
-
+Essendo tutti i nomi basati su UUID univoci generati per ogni singolo upload, **le collisioni fisiche dei nomi sono impossibili**. Il server restituisce al client l'elenco degli UUID generati, che il client dovrà salvarsi nel proprio DB per potervi poi accedere.
 ---
 
 ## 8. Risposta dell'API
 
-In caso di successo `POST /api/files/upload` restituisce HTTP `201`.
+In caso di successo `POST /api/files/upload` (o `/api/files/upload-api`) restituisce HTTP `201`.
 
 Esempio:
 
 ```json
 {
-  "original": "paesaggio.jpg",
+  "bucket": "savedimages",
+  "original": {
+    "uuid": "550e8400-e29b-41d4-a716-446655440000",
+    "url": "http://localhost:3003/api/files/read/550e8400-e29b-41d4-a716-446655440000"
+  },
   "keepOriginal": true,
   "variants": [
-    "thumbs/paesaggio_200x200.jpg",
-    "thumbs/paesaggio_800x600.jpg"
+    {
+      "uuid": "123e4567-e89b-12d3-a456-426614174000",
+      "url": "http://localhost:3003/api/files/read/123e4567-e89b-12d3-a456-426614174000"
+    }
   ],
   "message": "Immagine salvata con originali"
 }
 ```
 
-Quando l'originale non deve essere conservato:
-
-```json
-{
-  "original": null,
-  "keepOriginal": false,
-  "variants": [
-    "thumbs/paesaggio_200x200.jpg"
-  ],
-  "message": "Immagine salvata solo nelle versioni modificate"
-}
-```
+*(Nota: se il file è privato, la url punterà invece all'endpoint `/private-signed/` e includerà la firma crittografica temporanea)*
 
 ### Esempio con cURL
 
@@ -458,7 +417,8 @@ curl.exe -s `
 Leggere un oggetto dal bucket attraverso il backend:
 
 ```text
-GET http://localhost:3003/api/files/object/thumbs/foto_200x200.jpg
+GET http://localhost:3003/api/files/read/550e8400-e29b-41d4-a716-446655440000
+
 ```
 
 ---
@@ -897,16 +857,20 @@ curl -X POST -H "x-api-key: imgf_TUA_CHIAVE" \
   http://localhost:3003/api/files/upload-api
 ```
 
-### 17.4 Recupero Oggetti (Retrieve)
+### 17.4 Recupero Oggetti (Retrieve) e Sicurezza (Signed URLs)
 
-Puoi sempre recuperare l'immagine caricata senza API Key effettuando una richiesta GET alla route che funge da proxy verso MinIO:
+La lettura dei file passa attraverso UUID e dipende dalla visibilità del file (pubblico o privato).
 
-```text
-GET http://localhost:3003/api/files/object/thumbs/test_100x100.png
-```
+- **Pubblici (`/read/{uuid}`)**: Puoi recuperare l'immagine senza alcuna firma e senza API Key.
+  `GET http://localhost:3003/api/files/read/0a1b2c3d-...`
 
-Se il file esiste, il backend restituisce il file in stream con il corretto `Content-Type` (es. `image/png` o `image/jpeg`) e `HTTP 200 OK`. In caso contrario, restituirà un `404 Not Found`.
+- **Privati (`/private-signed/{uuid}`)**: Richiede una **firma crittografica (Signed URL)**. Non serve passare la API Key, ma il link restituito durante l'upload contiene una `signature` e una data di scadenza (`expires`). Se l'URL viene manomesso, ricevi un errore 403 Forbidden.
+  `GET http://localhost:3003/api/files/private-signed/0a1b2c3d-...?expires=179...&signature=...`
 
+- **Privati tramite API Key (`/private/{uuid}`)**: Puoi forzare la lettura di un file privato passando in header la stessa `x-api-key` che ha originariamente caricato il file. Non serve la signature qui.
+  `GET http://localhost:3003/api/files/private/0a1b2c3d-...`
+
+Se il file esiste (e i permessi sono corretti), il backend restituisce il file in stream con il corretto `Content-Type`. In caso contrario, restituirà un `404 Not Found` (o 403 se non autorizzato).
 ---
 
 ## 18. Sicurezza delle API key e Considerazioni final
