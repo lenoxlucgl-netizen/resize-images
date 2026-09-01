@@ -263,52 +263,60 @@ Non usa Signed URL, ma **richiede l'header x-api-key** di chi ha originariamente
 Esempio:
 ```http
 GET /api/files/private/550e8400-e29b-41d4-a716-446655440000
+```
+
+---
+
+# URL Firmati (Signed URLs)
+
+Gli URL firmati sono un meccanismo di sicurezza fondamentale per proteggere l'accesso ai file (come immagini private o documenti sensibili). 
+Invece di rendere un file pubblico a chiunque conosca il link, l'URL firmato richiede un "pass crittografico" (la *signature*) e una "data di scadenza" (*expires*).
+
+### Come Funziona la Logica
+1. **Il client** richiede un link temporaneo per accedere a un file.
+2. **Il server** prende il percorso del file e unisce l'URL (o l'UUID) a un timestamp di scadenza (es. `expires=1790000000`).
+3. **Il server** genera una firma crittografica sicura in formato HMAC_SHA256 usando una `SECRET_KEY` (configurata nel `.env` come `URL_SIGN_SECRET`).
+4. **Il server** restituisce al client il link finale completo, che somiglierà a questo:
+   `http://.../private-signed/008334b8-c021-44c0-8081-088aeb072ce0?expires=1790000000&signature=fc9d18...`
+5. Quando qualcuno prova ad aprire quel link nel browser, il server esegue tre controlli:
+   - Verifica che l'URL non sia scaduto.
+   - Ricalcola la firma usando la stessa `SECRET_KEY` invisibile all'utente.
+   - Confronta la firma calcolata con quella passata nel link. Se coincidono, fornisce il file. Altrimenti (se la firma non coincide o il link è scaduto), restituisce un errore `403 Forbidden`.
+
 ## GET o POST /api/files/signature (Firma Generica)
-Questa rotta ti permette di firmare un URL arbitrario (es. un link S3, Cloudflare, Bookizon Storage, ecc.) in modo totalmente slegato dal database interno.
+Questa rotta è utile se vuoi firmare un URL arbitrario slegato dal database (es. un link su un server S3, Cloudflare, Bookizon Storage, ecc.).
 Passa `url` per un link completo, oppure `file` (es. `invoices/2026/fattura.pdf`) e il sistema aggiungerà in automatico un dominio base (configurabile tramite `STORAGE_BASE_URL` in `.env`, di default `https://storage.bookizon.it/`).
 
-**Esempio:**
-```http
-GET /api/files/signature?url=https://storage.miosito.it/files/documento.pdf&expiresIn=3600
-x-api-key: imgf_TUA_CHIAVE
+**Esempio di Comando (PowerShell):**
+```powershell
+curl.exe -X POST "http://localhost:3003/api/files/signature?url=https://storage.miosito.it/files/documento.pdf&expiresIn=3600" `
+  -H "x-api-key: imgf_INSERISCI_LA_TUA_CHIAVE"
 ```
 **Risposta:**
 ```json
 {
   "url": "https://storage.miosito.it/files/documento.pdf",
-  "expires": 1790000000,
+  "expires": 1788275000,
   "signature": "9d2e8a7c...",
-  "signedUrl": "https://storage.miosito.it/files/documento.pdf?expires=1790000000&signature=9d2e8a7c..."
+  "signedUrl": "https://storage.miosito.it/files/documento.pdf?expires=1788275000&signature=9d2e8a7c..."
 }
 ```
 
 ## GET o POST /api/files/get-signature (Interna tramite UUID)
-Se hai il link base di un file privato (es. `http://localhost:3003/api/files/private-signed/550e8400-...?expires=179...&signature=...`) ma la firma è scaduta o ti serve ricalcolarla, puoi passare il link intero a questa rotta. Il server estrarrà in automatico l'UUID e ti restituirà la nuova firma. Serve la stessa API Key che ha caricato il file. Puoi anche specificare `expiresIn` (in secondi) nel body o in querystring.
+Se hai il link base di un file privato (es. `http://localhost:3003/api/files/private-signed/550e8400-...?expires=179...&signature=...`) ma la firma è scaduta o ti serve ricalcolarla partendo da un link base, puoi passare il link intero a questa rotta. Il server estrarrà in automatico l'UUID e ti restituirà la nuova firma. Serve la stessa API Key che ha caricato il file. Puoi anche specificare `expiresIn` (in secondi) nel body o in querystring.
 
-**GET:**
-```http
-GET /api/files/get-signature?url=http://localhost:3003/api/files/private-signed/550e8400-e29b-41d4-a716-446655440000
-x-api-key: imgf_TUA_CHIAVE
+**Esempio di Comando (PowerShell):**
+```powershell
+curl.exe -X POST "http://localhost:3003/api/files/get-signature?url=http://localhost:3003/api/files/private-signed/008334b8-c021-44c0-8081-088aeb072ce0&expiresIn=7200" `
+  -H "x-api-key: imgf_INSERISCI_LA_TUA_CHIAVE"
 ```
-
-**POST:**
-```http
-POST /api/files/get-signature
-x-api-key: imgf_TUA_CHIAVE
-Content-Type: application/json
-
-{
-  "url": "http://localhost:3003/api/files/private-signed/550e8400-e29b-41d4-a716-446655440000"
-}
-```
-
-Risposta (200):
+**Risposta:**
 ```json
 {
   "signature": "ab12cd34ef56...",
-  "uuid": "550e8400-e29b-41d4-a716-446655440000",
-  "expires": 1790000000,
-  "signedUrl": "http://localhost:3003/api/files/private-signed/550e8400-e29b-41d4-a716-446655440000?expires=1790000000&signature=ab12cd34ef56..."
+  "uuid": "008334b8-c021-44c0-8081-088aeb072ce0",
+  "expires": 1788279788,
+  "signedUrl": "http://localhost:3003/api/files/private-signed/008334b8-c021-44c0-8081-088aeb072ce0?expires=1788279788&signature=ab12cd34ef56..."
 }
 ```
 
@@ -410,4 +418,6 @@ Mettici sempre `LxA`, es. `200x200`. Il backend usa l'opzione "inside", quindi m
 - Nessun file privato può essere letto senza firma (tramite `/private-signed/`) o senza API Key (tramite `/private/`). I file pubblici invece sono ad accesso libero su `/read/`.
 - Tieni il `.env` fuori dal repo. Lì dentro ora risiede la password `URL_SIGN_SECRET` per generare le firme degli URL, essenziale per la sicurezza.
 - Il DB per le API keys, i log di accesso e i file usa password sicure e gli hash in SHA-256 (no cleartext!).
-- **Docker**: Ho sistemato il `.dockerignore`. Così evitiamo di portarci dietro file inutili o, peggio, database locali (`mysql-data`) ed `.env` quando buildiamo l'immagine. Tutto più pulito e sicuro.
+- **Docker**: Ho sistemato il `.dockerignore`. Così evitiamo di portarci dietro file inutili o, peggio, database locali (`mysql-data`) ed `.env` quando buildiamo l'immagine. Tutto più pulito e sicuro. Se modifichi la logica dei file in locale (es. `AccessController.js`, `SecurityService.js`), ricorda sempre di riavviare Docker ricostruendo l'immagine con `docker-compose up -d --build app`.
+- **Troubleshooting "Errore Interno" su Signed URL:** Se navighi su un `signedUrl` che hai appena generato (quindi con firma sicuramente corretta) ma ricevi `"error": "Errore interno"` (status 500) invece di `"Firma non valida o scaduta"` (status 403), significa che **il sistema ha validato l'accesso con successo**, ma il file fisico su MinIO non esiste (es. è stato cancellato).
+- **Gestione degli '&' (E Commerciale) su Windows:** Se provi a incollare un `signedUrl` nel prompt di comando o in PowerShell, potresti ricevere un errore a causa del carattere `&`. Questo vale solo per la riga di comando (in PowerShell racchiudi il link tra virgolette `"`). Nel codice o nel browser funziona normalmente.
