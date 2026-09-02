@@ -289,8 +289,7 @@ Passa `url` per un link completo, oppure `file` (es. `invoices/2026/fattura.pdf`
 
 **Esempio di Comando (PowerShell):**
 ```powershell
-curl.exe -X POST "http://localhost:3003/api/files/signature?url=https://storage.miosito.it/files/documento.pdf&expiresIn=3600" `
-  -H "x-api-key: imgf_INSERISCI_LA_TUA_CHIAVE"
+Invoke-RestMethod -Uri "http://localhost:3003/api/files/signature?url=https://storage.miosito.it/files/documento.pdf&expiresIn=3600" -Method Post -Headers @{ "x-api-key" = "imgf_INSERISCI_LA_TUA_CHIAVE" } | Select-Object -ExpandProperty signedUrl
 ```
 **Risposta:**
 ```json
@@ -302,15 +301,34 @@ curl.exe -X POST "http://localhost:3003/api/files/signature?url=https://storage.
 }
 ```
 
-## GET o POST /api/files/get-signature (Interna tramite UUID)
-Se hai il link base di un file privato (es. `http://localhost:3003/api/files/private-signed/550e8400-...?expires=179...&signature=...`) ma la firma è scaduta o ti serve ricalcolarla partendo da un link base, puoi passare il link intero a questa rotta. Il server estrarrà in automatico l'UUID e ti restituirà la nuova firma. Serve la stessa API Key che ha caricato il file. Puoi anche specificare `expiresIn` (in secondi) nel body o in querystring.
+## GET o POST /api/files/get-signature (Ottieni Firma da URL Esistente)
 
-**Esempio di Comando (PowerShell):**
+Questo endpoint serve per prendere un URL (o un percorso) di un file privato che hai già in mano e "trasformarlo" al volo in un URL firmato temporaneo e accessibile, senza dover ricostruire il link da zero nel frontend.
+
+**Sicurezza:** Richiede autenticazione (API Key). L'API Key deve essere quella dell'utente che ha caricato originariamente il file (oppure una master API key globale).
+
+### Come Funziona (Dietro le quinte)
+1. **Estrazione Intelligente (RegEx):** L'endpoint non ti obbliga a passare solo l'UUID. Puoi passargli l'intero URL "sporco" e il server userà un'espressione regolare per scansionare e pescare automaticamente l'UUID al suo interno.
+2. **Controllo Sicurezza (`FileDbService`):** Verifica sul database che il file esista e che la tua API Key corrisponda a quella del proprietario del file. Se non sei il proprietario, la richiesta viene bloccata con un `403 Forbidden`.
+3. **Firma Crittografica (`crypto` / HMAC-SHA256):** Somma il tempo attuale con i secondi di validità richiesti (`expiresIn`) e genera un hash crittografico sicuro unendo l'UUID e la scadenza tramite il `URL_SIGN_SECRET`.
+4. **Riscrittura URL:** Pulisce l'URL originale da vecchie querystring e fa un *replace* automatico della rotta (trasforma ad esempio `/api/files/private/` in `/api/files/private-signed/`), per poi accodare `?expires=...&signature=...`.
+
+### Parametri della Richiesta
+Puoi passarli sia in `query string` (se usi la GET) sia nel `body` (formato JSON, se usi la POST):
+*   **`url`** *(Obbligatorio, stringa)*: L'URL (o il percorso) del file di cui vuoi ottenere il link firmato.
+*   **`expiresIn`** *(Opzionale, numero)*: Per quanti secondi il link deve rimanere valido. Se non lo metti, il default è `3600` (1 ora).
+
+**Esempio di Comando per PowerShell (Consigliato su Windows):**
+Poiché PowerShell ha problemi storici a parsare il JSON all'interno del comando `curl.exe`, la soluzione più robusta e pulita su Windows è usare il comando nativo `Invoke-RestMethod`. 
+Inoltre, aggiungendo `| Select-Object -ExpandProperty signedUrl` alla fine, il terminale ti stamperà solo il link pulito, pronto da copiare e incollare nel browser senza problemi di formattazione (e senza che i caratteri come la `&` vengano convertiti in `\u0026`).
+
 ```powershell
-curl.exe -X POST "http://localhost:3003/api/files/get-signature?url=http://localhost:3003/api/files/private-signed/008334b8-c021-44c0-8081-088aeb072ce0&expiresIn=7200" `
-  -H "x-api-key: imgf_INSERISCI_LA_TUA_CHIAVE"
+Invoke-RestMethod -Uri "http://localhost:3003/api/files/get-signature" -Method Post -Headers @{ "x-api-key" = "imgf_INSERISCI_LA_TUA_CHIAVE"; "Content-Type" = "application/json" } -Body '{"url": "http://localhost:3003/api/files/private/008334b8-c021-44c0-8081-088aeb072ce0", "expiresIn": 7200}' | Select-Object -ExpandProperty signedUrl
 ```
-**Risposta:**
+
+*(Se invece ti serve l'intero oggetto JSON in risposta, sostituisci la parte finale con `| ConvertTo-Json`)*
+
+**Risposta di Successo (200 OK):**
 ```json
 {
   "signature": "ab12cd34ef56...",
@@ -319,6 +337,11 @@ curl.exe -X POST "http://localhost:3003/api/files/get-signature?url=http://local
   "signedUrl": "http://localhost:3003/api/files/private-signed/008334b8-c021-44c0-8081-088aeb072ce0?expires=1788279788&signature=ab12cd34ef56..."
 }
 ```
+
+**Risposte di Errore Comuni:**
+*   **`400 Bad Request`**: Manca il parametro `url` o non c'è traccia di un UUID valido all'interno dell'URL fornito.
+*   **`403 Forbidden`**: L'API key fornita non ha i permessi (non è il proprietario del file).
+*   **`404 Not Found`**: L'UUID estratto non esiste nel database.
 
 ---
 

@@ -9,9 +9,13 @@ class StorageController {
     try {
       if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
-      // Il bucket di destinazione è quello richiesto, altrimenti quello dell'API key, altrimenti default
+      // Il bucket di destinazione è quello richiesto, altrimenti quello dell'API key, altrimenti variabile d'ambiente
       const defaultAuthBucket = req.authorizedBucket === '*' ? null : req.authorizedBucket;
-      const targetBucket = (req.body.bucket && req.body.bucket.trim()) ? req.body.bucket.trim() : (defaultAuthBucket || process.env.MINIO_BUCKET || 'savedimages');
+      const targetBucket = (req.body.bucket && req.body.bucket.trim()) ? req.body.bucket.trim() : (defaultAuthBucket || process.env.MINIO_BUCKET);
+      
+      if (!targetBucket) {
+        return res.status(400).json({ error: 'Specifica un bucket di destinazione nel parametro "bucket"' });
+      }
 
       // Se l'API key è limitata a un bucket, deve coincidere con il bucket di destinazione
       if (req.authorizedBucket && req.authorizedBucket !== '*' && req.authorizedBucket !== targetBucket) {
@@ -22,9 +26,15 @@ class StorageController {
       const ownerApiKey = req.apiKeyHash || null; // Recuperiamo l'hash dell'API key salvato dal middleware
       
       let customPath = req.body.path !== undefined ? req.body.path.trim() : null;
-      if (customPath !== null) {
-        customPath = customPath.replace(/^[\/\\]+/, '').replace(/[\/\\]+$/, ''); // Rimuove slash iniziali/finali
-        if (customPath.includes('..')) return res.status(400).json({ error: 'Percorso non valido' });
+      if (!customPath) {
+          return res.status(400).json({ error: 'Devi specificare una cartella di destinazione (parametro "path", usa "/" per la root del bucket)' });
+      }
+      
+      if (customPath === '/') {
+          customPath = ''; // Consenti la root se passano esplicitamente "/"
+      } else {
+          customPath = customPath.replace(/^[\/\\]+/, '').replace(/[\/\\]+$/, ''); // Rimuove slash iniziali/finali
+          if (customPath.includes('..')) return res.status(400).json({ error: 'Percorso non valido' });
       }
 
       let customResizedPath = req.body.resizedPath !== undefined ? req.body.resizedPath.trim() : null;
