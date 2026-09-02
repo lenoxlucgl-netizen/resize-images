@@ -353,7 +353,19 @@ Il sistema offre due modi per gestire in automatico le "regole" (policy) di MinI
 Nella root del progetto troverai un file chiamato `rules.json`. Puoi scrivere qui dentro le tue policy AWS S3 divise per bucket.
 Ogni volta che **avvii il server Node.js**, il server legge questo file e applica automaticamente le policy su MinIO.
 
-Esempio di `rules.json` per rendere pubblica tutta la cartella `public/` del bucket `savedimages`:
+La regola d'oro di MinIO è: **Tutto è PRIVATO di default**. Se non scrivi una regola che permette esplicitamente la lettura, nessuno potrà scaricare i file direttamente dallo storage (es. usando `/read/`) senza autorizzazione.
+
+Il primissimo livello del file JSON indica **il nome del bucket**. All'interno scrivi le regole in formato AWS S3.
+
+### Spiegazione dei Campi
+*   **`Effect`**: Può essere `"Allow"` (Permetti) o `"Deny"` (Nega).
+*   **`Principal`**: Indica "chi" è autorizzato. Il valore `"*"` significa "chiunque su internet" (accesso anonimo).
+*   **`Action`**: Quale azione è permessa. `"s3:GetObject"` significa "solo permesso di scaricare/leggere il file".
+*   **`Resource`**: L'elenco dei percorsi esatti su cui applicare la regola (es. `arn:aws:s3:::bucket/cartella/*`).
+*   **`NotResource`**: L'opposto di Resource. Applica la regola su TUTTO il bucket, *tranne* i percorsi elencati qui.
+
+### Caso 1: Solo una cartella specifica PUBBLICA (il resto è privato)
+Vuoi che tutto il bucket `savedimages` sia privato, ma la cartella `public/` deve essere visibile a tutti:
 ```json
 {
   "savedimages": {
@@ -364,6 +376,45 @@ Esempio di `rules.json` per rendere pubblica tutta la cartella `public/` del buc
         "Principal": { "AWS": ["*"] },
         "Action": ["s3:GetObject"],
         "Resource": ["arn:aws:s3:::savedimages/public/*"]
+      }
+    ]
+  }
+}
+```
+
+### Caso 2: Tutto PUBBLICO, tranne una cartella PRIVATA
+Vuoi che chiunque possa leggere i file dal bucket `testapi`, tranne i file dentro la cartella sensibile `portfolio/`:
+```json
+{
+  "testapi": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": { "AWS": ["*"] },
+        "Action": ["s3:GetObject"],
+        "NotResource": ["arn:aws:s3:::testapi/portfolio/*"]
+      }
+    ]
+  }
+}
+```
+
+### Caso 3: Più cartelle Pubbliche
+Se vuoi rendere pubbliche due cartelle diverse contemporaneamente in uno stesso bucket:
+```json
+{
+  "nomebucket": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": { "AWS": ["*"] },
+        "Action": ["s3:GetObject"],
+        "Resource": [
+          "arn:aws:s3:::nomebucket/loghi/*",
+          "arn:aws:s3:::nomebucket/sfondi/*"
+        ]
       }
     ]
   }
