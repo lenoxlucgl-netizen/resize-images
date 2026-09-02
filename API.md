@@ -167,7 +167,7 @@ Questi sono i parametri che gestisco:
 ### Come gestisco i file
 Accetto di tutto. Poi internamente il backend fa questo:
 - **Immagini**: fa il resize se richiesto.
-- **Video**: non li tocca, li salva sotto `videos/` o nel path che hai chiesto.
+- **Video 🎥**: non li tocca, li salva nativamente sotto `videos/` o nel path che hai chiesto. Successivamente puoi estrarne in automatico una **copertina (thumbnail)** grazie all'endpoint dedicato! Inoltre puoi usarli direttamente nel tag `<video>` tramite l'endpoint di lettura.
 - **Altro**: lo salva in `files/` o nel tuo path senza farci nulla.
 - **Sicurezza Pubblico/Privato**: Se non passi esplicitamente il parametro `isPublic`, il backend utilizza delle regole basate sui percorsi. Ad esempio, per il bucket `testapi`, tutto ciò che finisce dentro la cartella `portfolio` è considerato **Privato**; tutto il resto è **Pubblico**. Queste regole sono applicate a livello di storage su MinIO all'avvio del server tramite il file `rules.json`.
 
@@ -213,25 +213,41 @@ La risposta in questo caso (ti restituirà gli **UUID** e i **link diretti** dei
 
 ---
 
-# Generazione Copertine Video 🎥
+# Gestione e Copertine Video 🎥
 
-## GET o POST /api/files/cover-video/{uuid}
+Oltre al salvataggio standard, il server ti offre ora alcune opzioni esclusive per i file video (mp4, webm, ecc.). I video caricati pubblicamente o privatamente possono essere visualizzati direttamente, e puoi generarne una copertina al volo.
 
-Questo endpoint permette di estrarre un fotogramma da un video salvato e generare automaticamente una copertina in formato immagine (`.jpg`).
-Il file generato verrà **salvato fisicamente** nello storage (nello stesso bucket) e assumerà automaticamente la stessa policy di visibilità (pubblico o privato) del video originale.
+## 1. Riproduzione Diretta
+Puoi inserire l'URL di un video pubblico (o un URL firmato per video privati) direttamente in un tag `<video src="...">` del tuo frontend, e il server fornirà il file correttamente per lo streaming base (supportando la lettura diretta dello stream).
 
-**Sicurezza:** Richiede l'API Key (`x-api-key` in header) di chi possiede il video originale.
+## 2. Generazione Copertine Video (Thumbnail)
+### GET o POST /api/files/cover-video/{uuid}
 
-**Parametri supportati (Query String o Body):**
-- `second` (Opzionale, numero): Indica a quale secondo del video estrarre il fotogramma. Se non passato, il sistema estrae il fotogramma al secondo `1`.
+Questo utilissimo endpoint permette di estrarre un fotogramma da un video precedentemente caricato e generare automaticamente una copertina in formato immagine (`.jpg`).
+Il file generato verrà **salvato fisicamente** nello storage (nello stesso bucket), registrato nel Database, e assumerà automaticamente la **stessa policy di visibilità (pubblico/privato)** del video originale.
+
+**Sicurezza:** Richiede l'API Key (`x-api-key` in header) di chi possiede il video originale (oppure Token Admin).
+
+**Parametri supportati (Query String):**
+- `second` (Opzionale, numero): Indica a quale secondo del video estrarre il fotogramma. Se non passato, il sistema estrae il fotogramma al secondo `1`. Utile per evitare le classiche schermate nere iniziali.
 
 **Esempio di Chiamata (GET):**
 ```powershell
 curl.exe -X GET "http://localhost:3003/api/files/cover-video/550e8400-e29b-41d4-a716-446655440000?second=3" -H "x-api-key: imgf_TUA_CHIAVE"
 ```
 
+**Esempio in Node.js (Axios):**
+```javascript
+const res = await axios.post(
+  'http://localhost:3003/api/files/cover-video/550e8400-e29b-41d4-a716-446655440000?second=5',
+  {},
+  { headers: { 'x-api-key': 'imgf_TUA_CHIAVE' } }
+);
+console.log(res.data.url); // Link diretto alla copertina estratta!
+```
+
 **Risposta (201 Created):**
-Ti restituisce le stesse informazioni di un classico upload, compreso l'UUID univoco della copertina e il link diretto pronto per essere usato (ad esempio nel tuo tag `<img>`).
+Ti restituisce le stesse informazioni di un classico upload, compreso l'UUID univoco della copertina e il link diretto pronto per essere usato nel tuo tag `<img src="...">`.
 
 ```json
 {
@@ -243,7 +259,7 @@ Ti restituisce le stesse informazioni di un classico upload, compreso l'UUID uni
 }
 ```
 
-> **Performance**: La prima volta che chiami l'endpoint per un determinato video/secondo, l'API impiegherà qualche instante per scaricare lo stream e processarlo fisicamente con `ffmpeg`. Una volta salvata, la copertina diventerà un file autonomo richiamabile all'istante tramite il suo URL.
+> **Performance e Caching**: La prima volta che chiami l'endpoint per un determinato video, l'API impiegherà qualche instante per fare il download dello stream ed estrarre il frame fisicamente con `ffmpeg`. Una volta salvata, la copertina diventa un file JPG autonomo, permanente e richiamabile all'istante (con possibilità di fruire delle stesse regole CDN/Caching del resto dei tuoi file).
 
 ---
 
