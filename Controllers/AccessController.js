@@ -1,6 +1,7 @@
 const StorageService = require('../services/StorageService');
 const FileDbService = require('../services/FileDbService');
 const SecurityService = require('../services/SecurityService');
+const VideoService = require('../services/VideoService');
 
 class AccessController {
   
@@ -193,6 +194,45 @@ class AccessController {
     } catch (error) {
       await FileDbService.logAccess({ uuid, ipAddress, status: 'ERROR' });
       res.status(500).json({ error: 'Errore durante la lettura del file' });
+    }
+  }
+
+  static async generateVideoCover(req, res) {
+    try {
+      const { uuid } = req.params;
+      const second = req.query.second ? parseInt(req.query.second) : 1;
+      
+      const file = await FileDbService.getFile(uuid);
+      if (!file) {
+        return res.status(404).json({ error: 'File non trovato' });
+      }
+
+      // Controllo permessi
+      if (req.apiKeyHash !== file.owner_api_key && req.authorizedBucket !== '*' && !file.is_public) {
+        return res.status(403).json({ error: 'Accesso negato al file' });
+      }
+
+      const coverInfo = await VideoService.extractCoverAndSave(uuid, second);
+      
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      let coverUrl;
+      if (coverInfo.isPublic) {
+        coverUrl = `${baseUrl}/api/files/read/${coverInfo.coverUuid}`;
+      } else {
+        coverUrl = `${baseUrl}/api/files/private/${coverInfo.coverUuid}`;
+      }
+
+      return res.status(201).json({
+        message: 'Copertina video generata e salvata con successo',
+        uuid: coverInfo.coverUuid,
+        url: coverUrl,
+        bucket: coverInfo.bucket,
+        isPublic: coverInfo.isPublic
+      });
+      
+    } catch (error) {
+      console.error('Errore generazione copertina video:', error);
+      res.status(500).json({ error: 'Errore durante la generazione della copertina', details: error.message });
     }
   }
 }

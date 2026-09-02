@@ -82,6 +82,10 @@ router.delete('/object/:bucket/*', apiKey, async (req, res) => {
 router.get('/signature', apiKey, AccessController.generateGenericSignature);
 router.post('/signature', apiKey, AccessController.generateGenericSignature);
 
+// Rotta per generare la copertina di un video
+router.post('/cover-video/:uuid', apiKey, AccessController.generateVideoCover);
+router.get('/cover-video/:uuid', apiKey, AccessController.generateVideoCover);
+
 router.get('/signed-url/:uuid', apiKey, AccessController.generateSignedUrl);
 router.post('/get-signature', apiKey, AccessController.getSignatureFromUrl);
 router.get('/get-signature', apiKey, AccessController.getSignatureFromUrl);

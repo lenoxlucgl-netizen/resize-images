@@ -213,6 +213,40 @@ La risposta in questo caso (ti restituirà gli **UUID** e i **link diretti** dei
 
 ---
 
+# Generazione Copertine Video 🎥
+
+## GET o POST /api/files/cover-video/{uuid}
+
+Questo endpoint permette di estrarre un fotogramma da un video salvato e generare automaticamente una copertina in formato immagine (`.jpg`).
+Il file generato verrà **salvato fisicamente** nello storage (nello stesso bucket) e assumerà automaticamente la stessa policy di visibilità (pubblico o privato) del video originale.
+
+**Sicurezza:** Richiede l'API Key (`x-api-key` in header) di chi possiede il video originale.
+
+**Parametri supportati (Query String o Body):**
+- `second` (Opzionale, numero): Indica a quale secondo del video estrarre il fotogramma. Se non passato, il sistema estrae il fotogramma al secondo `1`.
+
+**Esempio di Chiamata (GET):**
+```powershell
+curl.exe -X GET "http://localhost:3003/api/files/cover-video/550e8400-e29b-41d4-a716-446655440000?second=3" -H "x-api-key: imgf_TUA_CHIAVE"
+```
+
+**Risposta (201 Created):**
+Ti restituisce le stesse informazioni di un classico upload, compreso l'UUID univoco della copertina e il link diretto pronto per essere usato (ad esempio nel tuo tag `<img>`).
+
+```json
+{
+  "message": "Copertina video generata e salvata con successo",
+  "uuid": "nuovo-uuid-della-copertina",
+  "url": "http://localhost:3003/api/files/read/nuovo-uuid-della-copertina",
+  "bucket": "savedimages",
+  "isPublic": true
+}
+```
+
+> **Performance**: La prima volta che chiami l'endpoint per un determinato video/secondo, l'API impiegherà qualche instante per scaricare lo stream e processarlo fisicamente con `ffmpeg`. Una volta salvata, la copertina diventerà un file autonomo richiamabile all'istante tramite il suo URL.
+
+---
+
 # Leggere/Piallare File da MinIO (sempre via API)
 
 ## GET /api/files/list/{bucket}
