@@ -1,5 +1,5 @@
-# Usa un'immagine ufficiale di Node.js (versione 18 come da package.json)
-FROM node:18-alpine
+# Usa un'immagine ufficiale di Node.js (versione 20 per supportare @aws-sdk e altre dipendenze)
+FROM node:20-alpine
 
 # Crea e imposta la directory di lavoro all'interno del container
 WORKDIR /usr/src/app
@@ -9,7 +9,7 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 
 # Installa le dipendenze dell'applicazione
-RUN npm install --production
+RUN npm install --omit=dev
 
 # Copia il codice sorgente dell'applicazione nel container
 COPY . .
