@@ -17,8 +17,15 @@ StorageService.applyRulesFromFile();
 
 app.use(helmet({
   contentSecurityPolicy: {
-    directives: { scriptSrc: ["'self'", "'unsafe-inline'"] }
-  }
+    useDefaults: true,
+    directives: {
+      "script-src": ["'self'", "'unsafe-inline'"],
+      "upgrade-insecure-requests": null
+    }
+  },
+  crossOriginOpenerPolicy: false,
+  originAgentCluster: false,
+  hsts: false
 }));
 app.use(cors());
 app.use(express.json());
