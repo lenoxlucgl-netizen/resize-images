@@ -6,7 +6,7 @@ Passo 3: Creare una nuova compute instance.
 
 Passo 4: Assegnare un nome al progetto.
 
-Passo 5: Cambiare il sistema operativo del server in Canonical Ubuntu 22.04 Oracle.
+Passo 5: Cambiare il sistema operativo del server in Canonical Ubuntu 22.04 Oracle tramite l'apposito pulsante "Change Image".
 
 Passo 6: Sostituire la shape con la versione Ampere, con shape name VM.Standard.A1.Flex.
 
