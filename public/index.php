@@ -435,7 +435,7 @@
 				});
 				const results = await Promise.all(promises);
 				videoMessage.textContent = `${results.length} video salvati con successo!`; document.getElementById('resultSizes').textContent = 'Video Originale'; 
-				results.forEach(data => { const tile = document.createElement('article'); tile.className = 'tile'; tile.innerHTML = `<video src="/api/files/object/${encodeURIComponent(data.original)}?bucket=${encodeURIComponent(data.bucket)}" style="width:100%; aspect-ratio:1; object-fit:cover; background:#000;" controls></video><p>${data.original.split('/').pop()}</p>`; gallery.appendChild(tile); });
+				results.forEach(data => { const tile = document.createElement('article'); tile.className = 'tile'; tile.innerHTML = `<video src="${data.original.url}" style="width:100%; aspect-ratio:1; object-fit:cover; background:#000;" controls></video><p>${(data.original.key || data.original.uuid || "").split('/').pop()}</p>`; gallery.appendChild(tile); });
 				document.getElementById('results').classList.add('visible');
 			} catch (error) { videoMessage.textContent = error.message; } finally { videoSubmit.disabled = false; videoSubmit.textContent = 'Carica video'; }
 		});
@@ -481,7 +481,7 @@
 				});
 				const results = await Promise.all(promises);
 				allMessage.textContent = `${results.length} file salvati con successo!`; document.getElementById('resultSizes').textContent = 'File Originali'; 
-				results.forEach(data => { const tile = document.createElement('div'); tile.style.padding = '10px'; tile.style.border = '1px solid var(--line)'; tile.style.background = 'var(--white)'; tile.innerHTML = `<p style="margin:0; font:11px 'DM Mono',monospace; color:var(--muted);">${data.original.split('/').pop()}</p>`; gallery.appendChild(tile); });
+				results.forEach(data => { const tile = document.createElement('div'); tile.style.padding = '10px'; tile.style.border = '1px solid var(--line)'; tile.style.background = 'var(--white)'; tile.innerHTML = `<p style="margin:0; font:11px 'DM Mono',monospace; color:var(--muted);"><a href="${data.original.url}" target="_blank" style="color:inherit;text-decoration:none;">${(data.original.key || data.original.uuid || "").split('/').pop()}</a></p>`; gallery.appendChild(tile); });
 				document.getElementById('results').classList.add('visible');
 			} catch (error) { allMessage.textContent = error.message; } finally { allSubmit.disabled = false; allSubmit.textContent = 'Carica file'; }
 		});

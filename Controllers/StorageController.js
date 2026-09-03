@@ -76,7 +76,7 @@ class StorageController {
         
         return res.status(201).json({ 
           bucket,
-          original: { uuid, url: getFileUrl(uuid) },
+          original: { uuid, url: getFileUrl(uuid), key: fileKey },
           keepOriginal: true,
           variants: [],
           message: 'File salvato correttamente'
@@ -92,7 +92,7 @@ class StorageController {
 
         return res.status(201).json({ 
           bucket,
-          original: { uuid, url: getFileUrl(uuid) },
+          original: { uuid, url: getFileUrl(uuid), key: originalFinalKey },
           keepOriginal: true,
           variants: [],
           message: 'Immagine originale salvata'
@@ -132,7 +132,7 @@ class StorageController {
         await StorageService.uploadFile(bucket, originalFinalKey, req.file.buffer, req.file.mimetype, isPublic);
         const originalUuid = crypto.randomUUID();
         await FileDbService.registerFile({ uuid: originalUuid, bucket, fileKey: originalFinalKey, isPublic, ownerApiKey });
-        originalObj = { uuid: originalUuid, url: getFileUrl(originalUuid) };
+        originalObj = { uuid: originalUuid, url: getFileUrl(originalUuid), key: originalFinalKey };
       }
 
       res.status(201).json({ 
