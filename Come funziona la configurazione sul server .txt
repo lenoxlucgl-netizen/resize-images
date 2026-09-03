@@ -1,0 +1,86 @@
+Passo 1: Aprire il sito https://cloud.oracle.com/
+
+Passo 2: Registrarsi al sito.
+
+Passo 3: Creare una nuova compute instance.
+
+Passo 4: Assegnare un nome al progetto.
+
+Passo 5: Cambiare il sistema operativo del server in Canonical Ubuntu 22.04 Oracle.
+
+Passo 6: Sostituire la shape con la versione Ampere, con shape name VM.Standard.A1.Flex.
+
+Passo 7: Proseguire fino alla sezione Networking.
+
+Passo 8: Impostare Automatically assign private IPv4 address.
+
+Passo 9: Selezionare Generate a key pair for me.
+
+Passo 10: Scaricare le SSH keys private e pubbliche.
+
+Passo 11: Cliccare il pulsante Create.
+
+Passo 12: Attendere lo stato di completamento dell'istanza.
+
+Passo 13: Arrivato allo stato di Running, premere sul menu in alto a sinistra e selezionare Virtual Cloud Networks.
+
+Passo 14: Premere su vcn-20260902-1430.
+
+Passo 15: Premere su Security.
+
+Passo 16: Premere su Default Security List e, all'interno di Security Rules, aggiungere le regole di ingresso.
+
+Passo 17: Compilare il campo Source CIDR in maniera opportuna e compilare anche il campo Destination Port Range con le porte, una alla volta, in base a quelle utilizzate nella configurazione Docker. Come base utilizzare queste porte: 80, 8080, 443, 6379, 9901, 9000, 3003, 3306.
+
+Passo 18: Andare nella cartella in cui sono state scaricate le chiavi SSH.
+
+Passo 19: Fare clic destro all'interno della cartella e premere Apri nel terminale, oppure aprire il CMD ed eseguire il comando cd seguito dal percorso della cartella.
+
+Passo 20: Recuperare dalle istanze Oracle Cloud il Public IP.
+
+Passo 21: Eseguire questo comando:
+
+icacls "C:\Users\Giovanni\Downloads\ssh-key-2026-09-03.key" /inheritance:r; icacls "C:\Users\Giovanni\Downloads\ssh-key-2026-09-03.key" /grant:r "${env:USERNAME}:F"
+
+
+personalizzandolo in base al percorso in cui è stata salvata la chiave.
+
+Passo 22: Eseguire questo comando:
+
+ssh -i /percorso/della/tua/chiave.key ubuntu@PUBLIC_IP
+
+
+per connettersi al server.
+
+Passo 23: Attendere il completamento del comando inviato.
+
+Passo 24: Eseguire questo comando per installare le dipendenze Docker sul server:
+
+curl -fsSL https://get.docker.com -o get-docker.sh && sudo sh get-docker.sh
+
+
+e attendere il completamento dell'installazione.
+
+Passo 25: Recuperare il progetto dalla repository GitHub con questo comando personalizzato ed eseguirlo:
+
+git clone URL_DEL_TUO_REPOSITORY_GIT
+
+
+Passo 26: Entrare nella directory con questo comando:
+
+cd resize-images
+
+
+Passo 27: Avviare i container Docker con il seguente comando, attendendo il completamento:
+
+sudo docker compose up -d --build
+
+
+Passo 28: Per verificare il corretto funzionamento, navigare il seguente indirizzo dal browser:
+
+http://79.72.46.104:3003/
+
+
+oppure:
+
+http://IP_PUBLIC:3003/

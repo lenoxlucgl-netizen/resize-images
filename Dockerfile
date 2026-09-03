@@ -19,3 +19,4 @@ EXPOSE 3003
 
 # Comando per avviare l'applicazione
 CMD [ "npm", "start" ]
+    
