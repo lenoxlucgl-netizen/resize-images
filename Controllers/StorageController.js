@@ -120,7 +120,7 @@ class StorageController {
       for (const vKey of variantKeys) {
           const vUuid = crypto.randomUUID();
           await FileDbService.registerFile({ uuid: vUuid, bucket, fileKey: vKey, isPublic, ownerApiKey });
-          variantObjs.push({ uuid: vUuid, url: getFileUrl(vUuid) });
+          variantObjs.push({ uuid: vUuid, url: getFileUrl(vUuid), key: vKey });
       }
 
       const ext = cleanName.substring(cleanName.lastIndexOf('.') + 1);

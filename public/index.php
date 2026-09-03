@@ -296,7 +296,7 @@
 				});
 				const results = await Promise.all(promises);
 				message.textContent = `${results.length} immagini elaborate con successo!`; document.getElementById('resultSizes').textContent = selectedSizes.map(size => size.value.replace('x',' × ')).join(' · '); 
-				results.forEach(data => { data.variants.forEach(key => { const tile = document.createElement('article'); tile.className = 'tile'; tile.innerHTML = `<img src="/api/files/object/${encodeURIComponent(key)}?bucket=${encodeURIComponent(data.bucket)}" alt="Versione ridimensionata"><p>${key.split('/').pop()}</p>`; gallery.appendChild(tile); }); }); document.getElementById('results').classList.add('visible');
+				results.forEach(data => { data.variants.forEach(variant => { const tile = document.createElement('article'); tile.className = 'tile'; tile.innerHTML = `<img src="${variant.url}" alt="Versione ridimensionata"><p>${(variant.key || variant.uuid || "").split('/').pop()}</p>`; gallery.appendChild(tile); }); }); document.getElementById('results').classList.add('visible');
 			} catch (error) { message.textContent = error.message; } finally { submit.disabled = false; submit.textContent = 'Crea versioni'; }
 		});
 
